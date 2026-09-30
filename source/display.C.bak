@@ -1,0 +1,1960 @@
+
+#include "include\includes.h"
+
+
+
+
+
+
+uchar *Ptr_Send = 0;/*发送字符串指针*/
+ uint SendCount = 0;/*串口发送字节计数*/
+ uchar busy = 0;/*串口发送字节串完毕标志，=1 未完成=0已完成*/
+ uint RevCount=0;/*串口接收字节计数*/
+ 
+uchar idata rinterrupt=rinterrupt_No; 
+uchar idata rinterrupt_ld=rinterrupt_No;	  
+uchar idata rbuf[13];
+
+
+
+
+/*
+================================================================================
+* Name        : UART0_Init( )
+* Description : Initialize the UART0, baudrate
+* Input       : None
+* Output      : None
+* Note        : None
+================================================================================
+*/
+
+void UART0_Init( void )
+{ 
+  
+   SCON0   = 0x50;                     // SCON0: mode 1, 8-bit UART, enable RX
+   TMOD   |= 0x20;                     // TMOD: timer 1, mode 2, 8-bit reload
+   TH1    = 256-(SYSCLK/BAUDRATE/16);     // set Timer1 reload value for baudrate
+   TR1    = 1;                         // start Timer1
+   CKCON  = 0x10;                      // Timer1 uses SYSCLK as time base
+   PCON  |= 0x80;                      // SMOD00 = 1
+   TI0    = 1;                         // Indicate TX0 ready
+   IE |= 0x10;
+ 
+}
+
+static UART0_ISR( void ) interrupt 4
+{  
+   EA = 0;
+    if( SCON0 & ( 1<<1 ) )
+    {
+        //TX ok
+        SCON0 &= ~( 1<<1 );
+		if( SendCount != 0 )
+		{
+		 	SBUF0 = *Ptr_Send++;
+			SendCount--;
+			busy = 1;
+		} 
+		else
+		{
+		 	busy = 0;
+		}
+
+    }
+    else if( SCON0 & ( 1<<0 ) )
+    { 
+       //RX ok
+        SCON0 &= ~( 1<<0 );
+        rbuf[RevCount] = SBUF0;
+		if(rbuf[0]==0x5a)					
+		  RevCount++;		
+		if(RevCount==9)
+		{
+		  if (rbuf[0]==0x5A&&rbuf[1]==0xa5&&rbuf[2]==0x06&&rbuf[3]==0x83&&rbuf[4]==0x00&&rbuf[6]==0x01&&rbuf[7]==0x00){
+		     if(rbuf[5]==0x50)
+			 	rinterrupt = rinterrupt_Yes;
+		     if(rbuf[5]==0x51)
+			 	rinterrupt_ld = rinterrupt_Yes;
+			 RevCount=0;
+		  }
+		}else if(RevCount==13)
+		{
+		  if (rbuf[0]==0x5A&&rbuf[1]==0xa5&&rbuf[2]==0x0a&&rbuf[3]==0x81&&rbuf[4]==0x20&&rbuf[5]==0x07){
+		     real_time_flag=1;
+			 RevCount=0;
+		  }
+		}else if(RevCount>13){
+			 RevCount=0;
+			 rbuf[0]=0x00;
+		}
+		  
+    }
+	EA = 1;
+}
+void UART0_Send( unsigned char *buf, unsigned int size )
+{
+	while( busy );
+	Ptr_Send = buf;
+	SendCount = size;
+	SCON0 |= ( 1<<1 );
+	while( busy );
+}
+void UART0_Senddata(unsigned char buf)
+{
+	while( busy );
+	SBUF0 = buf;
+	SendCount = 0;
+	busy = 1;
+	while( busy );
+}
+
+void read_realtime(void)
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x03);
+	UART0_Senddata(0x81);
+	UART0_Senddata(0x20);
+	UART0_Senddata(0x07);
+
+}
+
+
+void change_picture(uchar pic_id)
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x04);
+	UART0_Senddata(0x80);
+	UART0_Senddata(0x03);
+	UART0_Senddata(0x00);
+	UART0_Senddata(pic_id);
+
+}
+
+void Display_Frequency_left ( uchar FrequencyByte )
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x05);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x20);			
+	UART0_Senddata(FrequencyByte/10+0x30);			
+	UART0_Senddata(FrequencyByte%10+0x30);									
+																																																					
+}
+
+ void Display_Energy_left ( uchar EnergyByte )
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x06);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x30);		
+	UART0_Senddata(EnergyByte/10+0x30);
+	UART0_Send(".",1);
+	UART0_Senddata(EnergyByte%10+0x30);				
+						
+}
+/*
+void Display_power_left ( uint EnergyByte )
+{
+
+	
+	if(EnergyByte>=1000){
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x07);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x10);		
+	UART0_Senddata(EnergyByte/1000+0x30);				
+	UART0_Senddata(EnergyByte%1000/100+0x30);
+	UART0_Senddata(EnergyByte%100/10+0x30);
+	UART0_Send(" ",1);
+	}else{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x07);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x10);		
+	UART0_Senddata(EnergyByte/100+0x30);				
+	UART0_Senddata(EnergyByte%100/10+0x30);
+	UART0_Send(".",1);
+	UART0_Senddata(EnergyByte%10+0x30);	
+	}					
+}	*/
+
+void Display_power_left ( uint EnergyByte )
+{
+
+	
+	if(EnergyByte>=900){
+	  EnergyByte=900;
+	}
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x07);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x10);		
+	if(EnergyByte>=100){		
+	    UART0_Senddata(EnergyByte/100+0x30);			
+		UART0_Senddata(EnergyByte%100/10+0x30);
+		UART0_Send(".",1);
+		UART0_Senddata(EnergyByte%10+0x30);	
+	}else{
+	    UART0_Senddata(EnergyByte%100/10+0x30);
+		UART0_Send(".",1);
+		UART0_Senddata(EnergyByte%10+0x30);	
+		UART0_Send(" ",1);
+
+	}
+					
+}
+
+void Display_Frequency_right ( uchar FrequencyByte )
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x05);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x60);			
+	UART0_Senddata(FrequencyByte/10+0x30);			
+	UART0_Senddata(FrequencyByte%10+0x30);									
+																																																					
+}
+
+ void Display_Energy_right ( uchar EnergyByte )
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x06);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x70);		
+	UART0_Senddata(EnergyByte/10+0x30);
+	UART0_Send(".",1);
+	UART0_Senddata(EnergyByte%10+0x30);				
+						
+}
+/*
+void Display_power_right ( uint EnergyByte )
+{
+
+	if(EnergyByte>=1000){
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x07);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x40);		
+	UART0_Senddata(EnergyByte/1000+0x30);				
+	UART0_Senddata(EnergyByte%1000/100+0x30);
+	UART0_Senddata(EnergyByte%100/10+0x30);
+	UART0_Send(" ",1);
+	}else{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x07);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x40);		
+	UART0_Senddata(EnergyByte/100+0x30);				
+	UART0_Senddata(EnergyByte%100/10+0x30);
+	UART0_Send(".",1);
+	UART0_Senddata(EnergyByte%10+0x30);	
+	}
+						
+}	  */
+
+void Display_power_right ( uint EnergyByte )
+{
+	if(EnergyByte>=900){
+	  EnergyByte=900;
+	}
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x07);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x40);
+	 if(EnergyByte>=100){		
+	    UART0_Senddata(EnergyByte/100+0x30);			
+		UART0_Senddata(EnergyByte%100/10+0x30);
+		UART0_Send(".",1);
+		UART0_Senddata(EnergyByte%10+0x30);	
+	}else{
+	    UART0_Senddata(EnergyByte%100/10+0x30);
+		UART0_Send(".",1);
+		UART0_Senddata(EnergyByte%10+0x30);	
+		UART0_Send(" ",1);
+
+	}
+
+						
+}
+
+
+
+
+
+void fnShowdaiji(void)
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);
+	UART0_Send("进入",4);
+	UART0_Senddata(0xB4);//待
+	UART0_Senddata(0xFD);
+  	UART0_Send("机状态  ",8);
+
+}
+
+void fnShowzhunbei(void)
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);
+	UART0_Send("进入准备状态  ",14);
+
+}
+
+void MF_1fnshow(void){
+
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(17);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x08);
+	UART0_Senddata(0xD0);
+	
+	if(rbuf[8]==0x51){
+	  if(gzall_flag)
+	    UART0_Send("    光闸  打开",14);
+	  else 
+	    UART0_Send("    光闸  关闭",14);
+	}
+	else if(rbuf[8]==0x52){
+	  if(yr_flag)
+	    UART0_Send("  预燃        ",14);
+	  else 
+	    UART0_Send("不预燃        ",14);
+	}
+	else if(rbuf[8]==0x53){
+	    UART0_Send("指示光亮度调节",14);
+
+	} 
+	else if(rbuf[8]==0x54){
+	  if(fls_flag)
+	    UART0_Send("指示光    闪烁",14);
+	  else 
+	    UART0_Send("指示光    恒亮",14);
+	}else if(rbuf[8]==0x55){
+	  if(jdq_flag)
+	    UART0_Send("继电器    闭合",14);
+	  else 
+	    UART0_Send("继电器    断开",14);
+	}else if(rbuf[8]==0x56){
+	  
+	  if(onf_flag){
+		  UART0_Send("RF正常写入    ",14);
+		}else{
+		  UART0_Send("RF异常        ",14);
+		} 
+
+	}else if(rbuf[8]==0x57){
+	  if(jsy_flag){
+	    if(onf_flag){
+		  UART0_Send("RF正常读取    ",14);
+		}else{
+		  UART0_Send("RF异常        ",14);
+		} 		
+	  }
+	  else{ 
+	    if(onf_flag){
+		  UART0_Send("RF正常写入    ",14);
+		}else{
+		  UART0_Send("RF异常        ",14);
+		} 
+	  }
+	}
+}
+
+void fnShowStatus(void)
+{	   
+	P7status=P7;
+	P6status=P6;
+	P5status=P5;
+	P4status=P4;
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(159);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x06);
+	UART0_Senddata(0x00);
+	UART0_Send("SDYOV_A:-",9);
+	UART0_Senddata(SDYOV_A|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SDYOT_A:-",9);
+	UART0_Senddata(SDYOT_A|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("SDYOV_B:-",9);
+	UART0_Senddata(SDYOV_B|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SDYOT_B:-",9);
+	UART0_Senddata(SDYOT_B|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("SWGZ0:---",9);
+	UART0_Senddata(SWGZ0|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SWGZ:----",9);
+	UART0_Senddata(SWGZ|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("SJTA0:---",9);
+	UART0_Senddata(SJTA0|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SJTA1:---",9);
+	UART0_Senddata(SJTA1|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("SJTB0:---",9);
+	UART0_Senddata(SJTB0|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SJTB1:---",9);
+	UART0_Senddata(SJTB1|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("SGX:-----",9);
+	UART0_Senddata(SGX|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SLS:-----",9);
+	UART0_Senddata(SLS|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	Delay (500);
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(159);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x06);
+	UART0_Senddata(0xB0);
+
+	UART0_Send("SYR_A:---",9);
+	UART0_Senddata(SYR_A|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SYR_B:---",9);
+	UART0_Senddata(SYR_B|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("ST1:-----",9);
+	UART0_Senddata(ST1|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("ST2:-----",9);
+	UART0_Senddata(ST2|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("ST3:-----",9);
+	UART0_Senddata(ST3|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("ST4:-----",9);
+	UART0_Senddata(ST4|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("SCPL:----",9);
+	UART0_Senddata(SCPL|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SCPH:----",9);
+	UART0_Senddata(SCPH|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("SLQSL_A:-",9);
+	UART0_Senddata(SLQSL_A|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SLQSL_B:-",9);
+	UART0_Senddata(SLQSL_B|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+	UART0_Send("SLQSL_C:-",9);
+	UART0_Senddata(SLQSL_C|0x30);
+	UART0_Send("    ",4);
+	UART0_Send("SYM:-----",9);
+	UART0_Senddata(SYM|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+
+
+}
+
+
+void Display_dianji_Fre(uchar cc )
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x09);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x00);
+	UART0_Senddata(cc);
+
+}
+
+
+void fnShowMaskByte (void)
+{
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(13);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x09);
+	UART0_Senddata(0x20);
+	UART0_Senddata(MB_SLQSL_AB|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);	
+	UART0_Senddata(MB_ST_YC|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+	UART0_Senddata(MB_SDY_AB|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+	UART0_Senddata(MB_SLS|0x30);
+
+	Delay (2000);
+
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(13);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0A);
+	UART0_Senddata(0x00);
+	UART0_Senddata(MB_SYM|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);	
+	UART0_Senddata(MB_SYR_AB|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+	UART0_Senddata(MB_SGZ_ABW|0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+	UART0_Senddata(MB_SGX|0x30);		
+
+
+}
+
+void Display_feedback_volt(void )
+{
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0B);
+	UART0_Senddata(0x00);
+
+	if (Flag_ShowFeedBack==Show_Enable)
+	  UART0_Send("是",2);
+	else 
+	  UART0_Send("否",2);
+
+
+}
+
+
+void LCD_CycleCount(uint cc)
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x09);
+	UART0_Senddata(0x10);
+	UART0_Senddata(cc/256);
+	UART0_Senddata(cc%256);
+
+
+}
+
+void fn_TotalPulseJoule(void){
+    
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(6);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0b);
+	UART0_Senddata(0x10);
+	UART0_Senddata(TotalJoule_U/65536);
+	UART0_Senddata(TotalJoule_U%65536/256);
+	UART0_Senddata(TotalJoule_U%256);
+
+	Delay (2000);
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(6);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0b);
+	UART0_Senddata(0x30);
+	UART0_Senddata(TotalPulse_U/65536);
+	UART0_Senddata(TotalPulse_U%65536/256);
+	UART0_Senddata(TotalPulse_U%256);
+
+}
+
+void Display_SetChangVolt_A(uint cc )
+{
+	
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0c);
+	UART0_Senddata(0x30);
+	UART0_Senddata(cc/256);
+	UART0_Senddata(cc%256);
+
+	
+}
+
+void Display_SetChangVolt_B(uint cc )
+{
+	
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0c);
+	UART0_Senddata(0x40);
+	UART0_Senddata(cc/256);
+	UART0_Senddata(cc%256);
+
+	
+}
+
+void MF_5Display_Frequency(uchar cc){
+
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0c);
+	UART0_Senddata(0x20);
+	UART0_Senddata(0x00);
+	UART0_Senddata(cc);
+}
+
+
+
+void fnshowDaiJi_JiaoZhun(void){
+	uint tt;
+    
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(17);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0c);
+	UART0_Senddata(0x50);
+	
+	if(rbuf[8]==0x72){
+	  if(jdq_flag)
+	    UART0_Send("  继电器  打开",14);
+	  else 
+	    UART0_Send("  继电器  关闭",14);
+	}
+	else if(rbuf[8]==0x79){
+	    UART0_Send("指示光亮度调节",14);
+
+	}
+	else if(rbuf[8]==0x7A){
+	  if(fls_flag)
+	    UART0_Send("指示光    闪烁",14);
+	  else 
+	    UART0_Send("指示光    恒亮",14);
+	}
+	else if(rbuf[8]==0x7B){
+	  if(gzall_flag)
+	    UART0_Send("    光闸  打开",14);
+	  else 
+	    UART0_Send("    光闸  关闭",14);
+	}
+	else if(rbuf[8]==0x7C){
+	  if(one_orflag)
+	    UART0_Send("    单腔  工作",14);
+	  else 
+	    UART0_Send("    多腔  工作",14);
+	}
+	else if(rbuf[8]==0x7D){
+	  if(yra_flag)
+	    UART0_Send("  A 腔    预燃",14);
+	  else 
+	    UART0_Send("  A 腔  未预燃",14);
+	}
+	else if(rbuf[8]==0x7F){
+	  if(yrb_flag)
+	    UART0_Send("  B 腔    预燃",14);
+	  else 
+	    UART0_Send("  B 腔  未预燃",14);
+	}
+	else if(rbuf[8]==0x7E){
+	    UART0_Send("优先工作的腔",12);
+		if (ucChoiceABlight==ALight)
+			UART0_Send(" A",2);
+		else if (ucChoiceABlight==BLight)
+		    UART0_Send(" B",2);
+	}
+	
+	else if(rbuf[8]==0x80){
+		tt=Pulse_time*50;
+	    UART0_Send("脉宽： ",7);	
+		UART0_Senddata(0x30+tt/100);
+		UART0_Senddata(0x30+tt/10%10);
+		UART0_Senddata(0x30+tt%10);
+		UART0_Send("us  ",4);	
+	}							 
+
+	else if(rbuf[8]==0x81){
+	  UART0_Send("进入",4);
+	  UART0_Senddata(0xB4);//待
+	  UART0_Senddata(0xFD);
+	  UART0_Send("机状态  ",8);
+	}	
+	else if(rbuf[8]==0x82)
+	  UART0_Send("进入准备状态  ",14);
+
+
+}
+
+void fnshowzhiliao_JiaoZhun(void){
+
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(17);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0c);
+	UART0_Senddata(0x50);   	
+	if ( SJTA0==1&&SJTA1==0){
+    	UART0_Send("激光",4);
+		UART0_Senddata(0xD5);//
+		UART0_Senddata(0xFD);
+		UART0_Send("在发射  ",8);
+	}
+    else
+  	UART0_Send("进入准备状态  ",14);  	
+
+}
+
+
+void MF_5Display_FeedBackEnergyVoltA(uint cc){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0c);
+	UART0_Senddata(0x00);
+	UART0_Senddata(cc/256);
+	UART0_Senddata(cc%256);
+}
+void MF_5Display_FeedBackEnergyVoltB(uint cc){
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0c);
+	UART0_Senddata(0x10);
+	UART0_Senddata(cc/256);
+	UART0_Senddata(cc%256);
+}
+
+void LCDqudong6_pinlv (  )
+{	 
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x00);
+	UART0_Senddata(SetFrequency);										
+
+
+}
+void LCDqudong6_fankui (  )
+{	
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x20);
+	UART0_Senddata(uiEner_S/256);
+	UART0_Senddata(uiEner_S%256);
+
+}
+
+void LCDqudong6_nengliang (  )
+{	                                  
+
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x10);
+	UART0_Senddata(0x00);
+	UART0_Senddata(SetEnergy_left);									
+
+}
+
+void LCDqudong6_unsaved (  )
+{	
+					
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x30);
+	UART0_Send("NO  SAVE",8);									
+										
+}
+void LCDqudong6_saved (  )
+{	
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x0b);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x30);
+	UART0_Send("  SAVE! ",8);
+
+} 
+
+void LCD_rf (  )
+{	
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(93);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x08);
+	UART0_Senddata(0x00);
+	if(data_rf[0]==0x01&&data_rf[1]==0x01)
+		UART0_Send("爱科凯能--1000u",15);
+	else if(data_rf[0]==0x01&&data_rf[1]==0x02)
+		UART0_Send("爱科凯能---500u",15);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+	UART0_Send("效期：",6);
+  	UART0_Senddata(data_rf[2]/10+0x30);
+	UART0_Senddata(data_rf[2]%10+0x30);
+  	UART0_Senddata(data_rf[3]/10+0x30);
+	UART0_Senddata(data_rf[3]%10+0x30);
+	UART0_Senddata(data_rf[4]/10+0x30);
+	UART0_Senddata(data_rf[4]%10+0x30);
+	UART0_Senddata(data_rf[5]/10+0x30);
+	UART0_Senddata(data_rf[5]%10+0x30);
+	UART0_Send("----",4);
+	UART0_Senddata(data_rf[6]/10+0x30);
+	UART0_Senddata(data_rf[6]%10+0x30);
+  	UART0_Senddata(data_rf[7]/10+0x30);
+	UART0_Senddata(data_rf[7]%10+0x30);
+	UART0_Senddata(data_rf[8]/10+0x30);
+	UART0_Senddata(data_rf[8]%10+0x30);
+	UART0_Senddata(data_rf[9]/10+0x30);
+	UART0_Senddata(data_rf[9]%10+0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+	UART0_Send("已用次数：",10);
+  	UART0_Senddata(data_rf[10]/10+0x30);
+	UART0_Senddata(data_rf[10]%10+0x30);
+  	UART0_Send("剩余次数：",10);
+  	UART0_Senddata(data_rf[11]/10+0x30);
+	UART0_Senddata(data_rf[11]%10+0x30);
+	UART0_Senddata(0x0D);
+	UART0_Senddata(0x0A);
+	UART0_Send("传输能量：",10);
+	UART0_Senddata(data_rf[12]/10+0x30);
+	UART0_Senddata(data_rf[12]%10+0x30);
+  	UART0_Senddata(data_rf[13]/10+0x30);
+	UART0_Senddata(data_rf[13]%10+0x30);
+	UART0_Senddata(data_rf[14]/10+0x30);
+	UART0_Senddata(data_rf[14]%10+0x30);
+	UART0_Senddata(data_rf[15]/10+0x30);
+	UART0_Senddata(data_rf[15]%10+0x30);
+	UART0_Send("J",1);
+
+}
+
+void MF_Display_2302(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(33);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x08);
+	UART0_Senddata(0xa0);
+	UART0_Send("水温：",6);
+	UART0_Senddata(temperature_SW/100+0x30);
+	UART0_Senddata(temperature_SW%100/10+0x30);
+	UART0_Send(".",1);
+	UART0_Senddata(temperature_SW%10+0x30);
+	UART0_Send("℃ ",2);
+	UART0_Send("环境：",6);
+	UART0_Senddata(temperature_HJ/100+0x30);
+	UART0_Senddata(temperature_HJ%100/10+0x30);
+	UART0_Send(".",1);
+	UART0_Senddata(temperature_HJ%10+0x30);
+	UART0_Send("℃ ",2);
+	UART0_Senddata(humidity_HJ/100+0x30);
+	UART0_Senddata(humidity_HJ%100/10+0x30);
+	UART0_Send(".",1);
+	UART0_Senddata(humidity_HJ%10+0x30);
+	UART0_Send("RH",2);
+
+}
+
+void MF_Display_detectA(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0C);
+	UART0_Senddata(0x3A);
+	detect_VA= detect_VA*0.28125;    //detect_VA*2.4/4096*4*120
+	UART0_Senddata(detect_VA/256);
+	UART0_Senddata(detect_VA%256);
+}
+
+void MF_Display_detectB(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(5);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0C);
+	UART0_Senddata(0x4A);
+	detect_VB= detect_VB*0.28125;    //detect_VA*2.4/4096*4*120
+	UART0_Senddata(detect_VB/256);
+	UART0_Senddata(detect_VB%256);
+}
+
+
+void show_daiji_qiehuan(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x02);
+	UART0_Senddata(230/256);
+	UART0_Senddata(230%256);
+    UART0_Senddata(470/256);
+	UART0_Senddata(470%256);
+	UART0_Senddata(580/256);
+	UART0_Senddata(580%256);
+	UART0_Senddata(600/256);
+	UART0_Senddata(600%256);
+	UART0_Senddata(230/256);
+	UART0_Senddata(230%256);
+    UART0_Senddata(470/256);
+	UART0_Senddata(470%256);
+
+}
+
+void show_zhunbei_qiehuan(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x05);
+	UART0_Senddata(230/256);
+	UART0_Senddata(230%256);
+    UART0_Senddata(470/256);
+	UART0_Senddata(470%256);
+	UART0_Senddata(580/256);
+	UART0_Senddata(580%256);
+	UART0_Senddata(600/256);
+	UART0_Senddata(600%256);
+	UART0_Senddata(230/256);
+	UART0_Senddata(230%256);
+    UART0_Senddata(470/256);
+	UART0_Senddata(470%256);
+
+}
+
+void show_database_qiehuan ( uint cc ){
+    
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x03);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(12);
+	UART0_Senddata(475/256);
+	UART0_Senddata(475%256);
+    UART0_Senddata(137/256);
+	UART0_Senddata(137%256);
+	UART0_Senddata(500/256);
+	UART0_Senddata(500%256);
+	UART0_Senddata(560/256);
+	UART0_Senddata(560%256);
+	UART0_Senddata(475/256);
+	UART0_Senddata(475%256);
+    UART0_Senddata(137/256);
+	UART0_Senddata(137%256);
+	Delay( 3000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x03);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(13);
+	UART0_Senddata(475/256);
+	UART0_Senddata(475%256);
+    UART0_Senddata(137/256);
+	UART0_Senddata(137%256);
+	UART0_Senddata(500/256);
+	UART0_Senddata(500%256);
+	UART0_Senddata(160/256);
+	UART0_Senddata(160%256);
+	UART0_Senddata(475/256);
+	UART0_Senddata(475%256);
+    UART0_Senddata((137+79*cc)/256);
+	UART0_Senddata((137+79*cc)%256);
+
+}
+
+void show_ldshan_qiehuan(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x90);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x05);
+	UART0_Senddata(360/256);
+	UART0_Senddata(360%256);
+    UART0_Senddata(400/256);
+	UART0_Senddata(400%256);
+	UART0_Senddata(490/256);
+	UART0_Senddata(490%256);
+	UART0_Senddata(450/256);
+	UART0_Senddata(450%256);
+	UART0_Senddata(360/256);
+	UART0_Senddata(360%256);
+    UART0_Senddata(400/256);
+	UART0_Senddata(400%256);
+
+}
+
+void show_ldheng_qiehuan(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x90);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x02);
+	UART0_Senddata(360/256);
+	UART0_Senddata(360%256);
+    UART0_Senddata(400/256);
+	UART0_Senddata(400%256);
+	UART0_Senddata(490/256);
+	UART0_Senddata(490%256);
+	UART0_Senddata(450/256);
+	UART0_Senddata(450%256);
+	UART0_Senddata(360/256);
+	UART0_Senddata(360%256);
+    UART0_Senddata(400/256);
+	UART0_Senddata(400%256);
+
+}
+
+void show_fashe_left(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x02);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x05);
+	UART0_Senddata(110/256);
+	UART0_Senddata(110%256);
+    UART0_Senddata(80/256);
+	UART0_Senddata(80%256);
+	UART0_Senddata(180/256);
+	UART0_Senddata(180%256);
+	UART0_Senddata(110/256);
+	UART0_Senddata(110%256);
+	UART0_Senddata(110/256);
+	UART0_Senddata(110%256);
+    UART0_Senddata(80/256);
+	UART0_Senddata(80%256);
+
+}
+
+void show_fashe_right(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x02);
+	UART0_Senddata(0x50);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x05);
+	UART0_Senddata(620/256);
+	UART0_Senddata(620%256);
+    UART0_Senddata(80/256);
+	UART0_Senddata(80%256);
+	UART0_Senddata(690/256);
+	UART0_Senddata(690%256);
+	UART0_Senddata(110/256);
+	UART0_Senddata(110%256);
+	UART0_Senddata(620/256);
+	UART0_Senddata(620%256);
+    UART0_Senddata(80/256);
+	UART0_Senddata(80%256);
+
+}
+
+void show_fashe_no(void){
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x02);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x02);
+	UART0_Senddata(110/256);
+	UART0_Senddata(110%256);
+    UART0_Senddata(80/256);
+	UART0_Senddata(80%256);
+	UART0_Senddata(180/256);
+	UART0_Senddata(180%256);
+	UART0_Senddata(110/256);
+	UART0_Senddata(110%256);
+	UART0_Senddata(110/256);
+	UART0_Senddata(110%256);
+    UART0_Senddata(80/256);
+	UART0_Senddata(80%256);
+	Delay (100);
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x15);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x02);
+	UART0_Senddata(0x50);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x06);
+    UART0_Senddata(0x00);
+	UART0_Senddata(0x01);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x02);
+	UART0_Senddata(620/256);
+	UART0_Senddata(620%256);
+    UART0_Senddata(80/256);
+	UART0_Senddata(80%256);
+	UART0_Senddata(690/256);
+	UART0_Senddata(690%256);
+	UART0_Senddata(110/256);
+	UART0_Senddata(110%256);
+	UART0_Senddata(620/256);
+	UART0_Senddata(620%256);
+    UART0_Senddata(80/256);
+	UART0_Senddata(80%256);
+
+}
+
+
+void Display_FeedBackEnergyVolt_left(uint cc){
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(7);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0xa0);
+	UART0_Senddata(cc/100+0x30); 
+	UART0_Send(".",1);
+	UART0_Senddata(cc%100/10+0x30);
+	UART0_Senddata(cc%10+0x30);
+	
+}
+
+
+
+void Display_FeedBackEnergyVolt_right(uint cc){
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(7);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0xb0);
+	UART0_Senddata(cc/100+0x30); 
+	UART0_Send(".",1);
+	UART0_Senddata(cc%100/10+0x30);
+	UART0_Senddata(cc%10+0x30);
+}
+
+void LCD_A_ChargeVolt (uint cc)
+{   
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(7);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0xa8);
+	UART0_Senddata(cc/100+0x30);
+	UART0_Senddata(cc%100/10+0x30);
+	UART0_Senddata(cc%10+0x30);
+	UART0_Send("V",1);
+}
+
+void LCD_B_ChargeVolt (uint cc)
+{   
+   UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(7);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0xb8);
+	UART0_Senddata(cc/100+0x30);
+	UART0_Senddata(cc%100/10+0x30);
+	UART0_Senddata(cc%10+0x30);
+	UART0_Send("V",1);
+}
+
+void LCD_Curing(void)
+{/*    治疗中----	 */
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("激光发射中....",14);
+
+}
+
+void LCD_Pulsetime ()
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);
+	if(rbuf[8]==0x18)								
+		UART0_Send("左踏板窄脉宽  ",14);
+	else if(rbuf[8]==0x19)								
+		UART0_Send("左踏板宽脉宽  ",14);
+	else if(rbuf[8]==0x1A)								
+		UART0_Send("右踏板窄脉宽  ",14);
+	else if(rbuf[8]==0x1B)								
+		UART0_Send("右踏板宽脉宽  ",14);
+}
+
+void LCD_jiaozhengtime ()
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("请校正系统时间",14);
+}
+
+void LCD_caijiaota_left ()
+{/* 请踩下脚踏继续*/
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("请踩左踏板继续",14);
+}
+					 
+void LCD_caijiaota_right ()
+{/* 请踩下脚踏继续*/
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("请踩右踏板继续",14);
+}
+
+void LCD_clean_caijiaota ()
+{/* 清除显示*/
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("              ",14);
+
+}
+
+
+void LCDzhiliaojizijian (  )
+{	
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("治疗机自检中  ",14);
+
+}
+void SysFault(uchar i)
+{    
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);
+	UART0_Send("系统故障    ",12);
+	UART0_Senddata(0x30+i/10);										
+	UART0_Senddata(0x30+i%10);
+ 	
+}
+
+
+void LCD_WatertemOk(void)
+{/*请按待机按钮恢复正常工作*/
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("请点待机键继续",14);
+	
+}
+void LCD_CloseDoor(void)
+{/*     请关门!          */
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("请关门        ",14);  
+}
+
+void LCD_CheckFeetSwitch (void)
+{/*      请关机    检查脚踏开关接线*/
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("请检查脚踏开关",14); 
+}
+
+void LCD_InsertFiber (void)
+{/*    请插入光纤    */
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("请插入光纤    ",14); 
+}
+void LCD_WaterSteamError (void)
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("水流量低      ",14); 
+}
+void LCD_PowerError (void)
+{
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("电源故障      ",14); 
+}
+
+void LCD_SystemAdjust (void)
+{/*    系统调整*/
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("系统调整中    ",14); 		
+
+}
+
+void eeprom_eror (void)
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("存储器错误    ",14); 
+
+		
+}
+void LCD_DianJi_TingZhuanorTaiMan (void)
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("电机停转或太慢",14); 
+
+}
+
+void LCD_SetParameterNewly (void)/*请重新设置参数*/
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("请重新设置参数",14); 
+
+}
+
+
+void LCD_WatertemDanger (void)
+{/*水温超高请暂停使用等待水温恢复正常*/
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("水温过高请等待",14); 
+}
+
+void LCD_WatertemisFalling ( void )
+{
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(0x11);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x00);
+	UART0_Senddata(0x80);								
+	UART0_Send("水温过低      ",14); 
+}
+
+
+void fnShowwork_info_lishiqingchu(uchar cccc )
+{	   
+	uchar dizhi_h,dizhi_l;
+	if(cccc==1){
+	  dizhi_h=0x10;
+	  dizhi_l=0x00;
+	}else if(cccc==2){
+	  dizhi_h=0x10;
+	  dizhi_l=0x70;
+	}else if(cccc==3){
+	  dizhi_h=0x11;
+	  dizhi_l=0x00;
+	}else if(cccc==4){
+	  dizhi_h=0x11;
+	  dizhi_l=0x70;
+	}else if(cccc==5){
+	  dizhi_h=0x12;
+	  dizhi_l=0x00;
+	}else if(cccc==6){
+	  dizhi_h=0x12;
+	  dizhi_l=0x70;
+	}else if(cccc==7){
+	  dizhi_h=0x13;
+	  dizhi_l=0x00;
+	}else if(cccc==8){
+	  dizhi_h=0x13;
+	  dizhi_l=0x70;
+	}else if(cccc==9){
+	  dizhi_h=0x14;
+	  dizhi_l=0x00;
+	}else if(cccc==10){
+	  dizhi_h=0x14;
+	  dizhi_l=0x70;
+	}
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(45);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(dizhi_h);
+	UART0_Senddata(dizhi_l);	
+	UART0_Send("                                          ",42);
+	Delay( 1000 );
+	Delay( 1000 );
+
+}
+
+void fnShowwork_info_lishi(uchar cccc )
+{	   
+	uchar dizhi_h,dizhi_l;
+	ulong maichong,nengliang,shijian;
+	maichong=work_info_read[6]*65536+work_info_read[7]*256+work_info_read[8];
+	nengliang=work_info_read[9]*65536+work_info_read[10]*256+work_info_read[11];
+	shijian=work_info_read[12]*256+work_info_read[13];
+	if(cccc==1){
+	  dizhi_h=0x10;
+	  dizhi_l=0x00;
+	}else if(cccc==2){
+	  dizhi_h=0x10;
+	  dizhi_l=0x70;
+	}else if(cccc==3){
+	  dizhi_h=0x11;
+	  dizhi_l=0x00;
+	}else if(cccc==4){
+	  dizhi_h=0x11;
+	  dizhi_l=0x70;
+	}else if(cccc==5){
+	  dizhi_h=0x12;
+	  dizhi_l=0x00;
+	}else if(cccc==6){
+	  dizhi_h=0x12;
+	  dizhi_l=0x70;
+	}else if(cccc==7){
+	  dizhi_h=0x13;
+	  dizhi_l=0x00;
+	}else if(cccc==8){
+	  dizhi_h=0x13;
+	  dizhi_l=0x70;
+	}else if(cccc==9){
+	  dizhi_h=0x14;
+	  dizhi_l=0x00;
+	}else if(cccc==10){
+	  dizhi_h=0x14;
+	  dizhi_l=0x70;
+	}
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(45);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(dizhi_h);
+	UART0_Senddata(dizhi_l);	
+	UART0_Senddata((work_info_read[0]/16)|0x30);
+	UART0_Senddata((work_info_read[0]%16)|0x30);
+	UART0_Send("/",1);
+	UART0_Senddata((work_info_read[1]/16)|0x30);
+	UART0_Senddata((work_info_read[1]%16)|0x30);
+	UART0_Send("/",1);
+	UART0_Senddata((work_info_read[2]/16)|0x30);
+	UART0_Senddata((work_info_read[2]%16)|0x30);
+	UART0_Send(" ",1);
+	UART0_Senddata((work_info_read[3]/16)|0x30);
+	UART0_Senddata((work_info_read[3]%16)|0x30);
+	UART0_Send(":",1);
+	UART0_Senddata((work_info_read[4]/16)|0x30);
+	UART0_Senddata((work_info_read[4]%16)|0x30);
+	UART0_Send(":",1);
+	UART0_Senddata((work_info_read[5]/16)|0x30);
+	UART0_Senddata((work_info_read[5]%16)|0x30);
+	UART0_Send("  ",2);
+	
+	UART0_Senddata((maichong/1000000)|0x30);	  //共7位显示
+	UART0_Senddata((maichong/100000%10)|0x30);
+	UART0_Senddata((maichong/10000%10)|0x30);
+	UART0_Senddata((maichong/1000%10)|0x30);
+	UART0_Senddata((maichong/100%10)|0x30);
+	UART0_Senddata((maichong/10%10)|0x30);
+	UART0_Senddata((maichong%10)|0x30);
+	UART0_Send("  ",2);
+	
+	UART0_Senddata((nengliang/1000000)|0x30);	  //共7位显示
+	UART0_Senddata((nengliang/100000%10)|0x30);
+	UART0_Senddata((nengliang/10000%10)|0x30);
+	UART0_Senddata((nengliang/1000%10)|0x30);
+	UART0_Senddata((nengliang/100%10)|0x30);
+	UART0_Senddata((nengliang/10%10)|0x30);
+	UART0_Senddata((nengliang%10)|0x30);
+	UART0_Send("  ",2);
+	
+	UART0_Senddata((shijian/1000)|0x30);	  //共4位显示
+	UART0_Senddata((shijian/100%10)|0x30);
+	UART0_Senddata((shijian/10%10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((shijian%10)|0x30);
+	Delay( 1000 );
+	Delay( 1000 );
+}
+
+void fnShowwork_info_benci(void )
+{
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(10);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x00);
+	UART0_Senddata((TotalPulse_benci/1000000)|0x30);	  //共7位显示
+	UART0_Senddata((TotalPulse_benci/100000%10)|0x30);
+	UART0_Senddata((TotalPulse_benci/10000%10)|0x30);
+	UART0_Senddata((TotalPulse_benci/1000%10)|0x30);
+	UART0_Senddata((TotalPulse_benci/100%10)|0x30);
+	UART0_Senddata((TotalPulse_benci/10%10)|0x30);
+	UART0_Senddata((TotalPulse_benci%10)|0x30);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(10);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x10);
+	UART0_Senddata((TotalJoule_benci_1/1000000)|0x30);	  //共7位显示
+	UART0_Senddata((TotalJoule_benci_1/100000%10)|0x30);
+	UART0_Senddata((TotalJoule_benci_1/10000%10)|0x30);
+	UART0_Senddata((TotalJoule_benci_1/1000%10)|0x30);
+	UART0_Senddata((TotalJoule_benci_1/100%10)|0x30);
+	UART0_Senddata((TotalJoule_benci_1/10%10)|0x30);
+	UART0_Senddata((TotalJoule_benci_1%10)|0x30);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(8);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x20);
+	UART0_Senddata(((uint)Totalminutes_benci/1000)|0x30);	  //共4位显示
+	UART0_Senddata(((uint)Totalminutes_benci/100%10)|0x30);
+	UART0_Senddata(((uint)Totalminutes_benci/10%10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata(((uint)Totalminutes_benci%10)|0x30);
+	Delay( 1000 );
+
+}
+
+
+void fnShowwork_database(void )
+{
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x30);	
+	UART0_Senddata((tuijian_database[0][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[0][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[0][1]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[0][1]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x40);	
+	UART0_Senddata((tuijian_database[0][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[0][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[0][2]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[0][2]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x50);	
+	UART0_Senddata((tuijian_database[1][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[1][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[1][1]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[1][1]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x60);	
+	UART0_Senddata((tuijian_database[1][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[1][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[1][2]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[1][2]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x70);	
+	UART0_Senddata((tuijian_database[2][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[2][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[2][1]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[2][1]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x80);	
+	UART0_Senddata((tuijian_database[2][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[2][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[2][2]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[2][2]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0x90);	
+	UART0_Senddata((tuijian_database[3][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[3][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[3][1]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[3][1]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0xA0);	
+	UART0_Senddata((tuijian_database[3][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[3][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[3][2]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[3][2]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0xB0);	
+	UART0_Senddata((tuijian_database[4][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[4][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[4][1]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[4][1]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0xC0);	
+	UART0_Senddata((tuijian_database[4][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[4][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[4][2]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[4][2]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0xD0);	
+	UART0_Senddata((tuijian_database[5][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[5][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[5][1]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[5][1]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(12);	 //数据+指令每次不得大于256
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x16);
+	UART0_Senddata(0xE0);	
+	UART0_Senddata((tuijian_database[5][0]/10)|0x30);
+	UART0_Senddata((tuijian_database[5][0]%10)|0x30);
+	UART0_Send("Hz ",3);
+	UART0_Senddata((tuijian_database[5][2]/10)|0x30);
+	UART0_Send(".",1);
+	UART0_Senddata((tuijian_database[5][2]%10)|0x30);
+	UART0_Send("J",1);
+	Delay( 1000 );
+
+}
+
+
+void fnshowshuiliu_JiaoZhun(void){
+    
+	UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(17);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x0c);
+	UART0_Senddata(0x50);
+	UART0_Send("水流量低      ",14);
+
+}
+
+void MF_1RFerro(void){
+
+    UART0_Senddata(0x5a);
+	UART0_Senddata(0xa5);
+    UART0_Senddata(17);
+	UART0_Senddata(0x82);
+	UART0_Senddata(0x08);
+	UART0_Senddata(0xD0);
+	UART0_Send("  RF通信异常  ",14);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

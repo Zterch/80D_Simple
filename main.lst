@@ -1,0 +1,2235 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\main.c LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXTEND
+                    - PRINT(.\main.lst) TABS(2) OBJECT(main.obj)
+
+line level    source
+
+   1          #include "include\includes.h"
+   2          #include "include\main2.h"
+   3          
+   4          /*
+   5          ÐÅºÅÓë×´Ì¬
+   6          
+   7          ×´Ì¬ÐÅºÅ  ³É¹¦£¨µ¥Æ¬»úÊäÈë¶Ë£©  Ê§°Ü£¨µ¥Æ¬»úÊäÈë¶Ë£©  
+   8          SLQSL 1 0 
+   9          SJT2  0 1 ²ÈÏÂÓëÎ´²È
+  10          SJT1  1 0 
+  11          SLS 1 0 
+  12          SYM 1 0 
+  13          SGX 1 0 
+  14          SDY-A 0 1 
+  15          SDY-B 0 1 
+  16          SYR-A 1 0 
+  17          SYR-B 1 0 
+  18          SWGZ  1 0 ´ò¿ªÓë¹Ø±Õ
+  19          SWGZ0 0 1 
+  20          SZGZ-A  1 0 
+  21          SZGZ0-A 0 1 
+  22          SZGZ-B  1 0 
+  23          SZGZ0-B 0 1 
+  24          ¿ØÖÆÐÅºÅ      
+  25          CYR-A 0 1 Ô¤È¼Óë³·Ïú
+  26          CYR-B 0 1 
+  27          CWGZ  0 1 ´ò¿ªÓë¹Ø±Õ
+  28          CZGZ-A  0 1 
+  29          CZGZ-B  0 1 
+  30          STY 1 0 Õý³£Óë¾¯±¨
+  31          STG 1 0 
+  32          PULSE 1¡ú0¡ú1 1 ´¥·¢Óë²»
+  33          CCDFD 0 1 Î´²ÈÏÂÓë²ÈÏÂ
+  34          PLAYE 1¡ú0¡ú1 1 ´¥·¢Óë²»
+  35          CA¡¢CB  ¶¨Î»AÊ±CA=0 CB=1  ¶¨Î»BÊ±CA=1 CB=0  
+  36          ISD-A4~6  ÓïÒôµØÖ·Ñ¡ÔñÎ»
+  37          Ö¸Ê¾¹âºãÁÁ
+  38          ONF=0 Ö¸Ê¾¹âÉÁ
+  39          ONF=1  FLS=1  Ö¸Ê¾¹âÃð
+  40          ONF=1  FLS=0  
+  41          
+  42          
+  43          */
+  44          
+  45          uchar DaiJi (void);
+  46          uchar ZhunBei (void);
+  47          uchar Database (void);
+  48          uchar Information (void);
+  49          
+  50          void main(void){
+  51   1        
+  52   1        Status = 1;                      // ÏµÍ³³õÊ¼Ê±Îª´ý»ú×´Ì¬
+  53   1        Initialize();                    // ³õÊ¼»¯Ó²¼þÍâÉè
+  54   1      
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 2   
+
+  55   1        Pulse_time_left = 6;
+  56   1        Pulse_time_right = 6;
+  57   1        Pulse_time2 = 6;
+  58   1        long_short_pluse_flag = 0;
+  59   1        
+  60   1        TotalJoule_benci = 0;
+  61   1        TotalJoule_benci_1  = 0;
+  62   1        TotalPulse_benci = 0;
+  63   1        Totalminutes_benci = 0;
+  64   1      
+  65   1      
+  66   1          while (1)
+  67   1          {
+  68   2            
+  69   2              switch(Status){
+  70   3                case 1: 
+  71   3                  Status = DaiJi();     
+  72   3                  break;
+  73   3                case 2: 
+  74   3                  Status = ZhunBei();
+  75   3                  break;
+  76   3              case 3: 
+  77   3                  Status = Database();
+  78   3                  break;
+  79   3              case 4: 
+  80   3                  Status = Information();
+  81   3                  break;
+  82   3                default:
+  83   3                  Status = 1;
+  84   3                  break;
+  85   3              }
+  86   2              
+  87   2          }
+  88   1      }
+  89          
+  90          
+  91          uchar Database (void)
+  92          { 
+  93   1          uchar pinlv_temp,nengliang_left_temp,nengliang_right_temp; 
+  94   1          fnShowwork_database( );
+  95   1          pinlv_temp=tuijian_database[0][0]; 
+  96   1        nengliang_left_temp=tuijian_database[0][1];
+  97   1        nengliang_right_temp=tuijian_database[0][2];
+  98   1        show_database_qiehuan (0);
+  99   1        while (1)
+ 100   1        { 
+ 101   2         if (rinterrupt==rinterrupt_Yes)
+ 102   2          {  
+ 103   3            rinterrupt = rinterrupt_No;
+ 104   3           switch ( rbuf[8] )
+ 105   3           {
+ 106   4               
+ 107   4              case 0x30:
+ 108   4              {       
+ 109   5                change_picture(0x02);
+ 110   5                return 1;
+ 111   5              }
+ 112   4              break;
+ 113   4              case 0x31:
+ 114   4              {       
+ 115   5                FlagPara = parachang; 
+ 116   5                SetFrequency=pinlv_temp;
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 3   
+
+ 117   5                 SetEnergy_left=nengliang_left_temp;
+ 118   5                 SetEnergy_right=nengliang_right_temp;
+ 119   5                 fnGenJuShangCiPinLvTiaoZheng(SetFrequency);//µ÷Õûµç»ú×ªËÙ
+ 120   5                 fnDianJiCheckAdjust( SetFrequency ); //µç»ú×ªËÙÎ¢µ÷£¬²âÁ¿ÖÜÆÚ
+ 121   5                 change_picture(0x02);
+ 122   5                 return 1;
+ 123   5              }
+ 124   4              break;
+ 125   4              case 0x32:
+ 126   4              {       
+ 127   5                 pinlv_temp=tuijian_database[rbuf[8]-50][0]; 
+ 128   5                 nengliang_left_temp=tuijian_database[rbuf[8]-50][1];
+ 129   5                 nengliang_right_temp=tuijian_database[rbuf[8]-50][2];
+ 130   5                 show_database_qiehuan (rbuf[8]-50);
+ 131   5              }
+ 132   4              break;
+ 133   4              case 0x33:
+ 134   4              {       
+ 135   5                 pinlv_temp=tuijian_database[rbuf[8]-50][0]; 
+ 136   5                 nengliang_left_temp=tuijian_database[rbuf[8]-50][1];
+ 137   5                 nengliang_right_temp=tuijian_database[rbuf[8]-50][2];
+ 138   5                 show_database_qiehuan (rbuf[8]-50);
+ 139   5              }
+ 140   4              break;
+ 141   4              case 0x34:
+ 142   4              {       
+ 143   5                pinlv_temp=tuijian_database[rbuf[8]-50][0]; 
+ 144   5                 nengliang_left_temp=tuijian_database[rbuf[8]-50][1];
+ 145   5                 nengliang_right_temp=tuijian_database[rbuf[8]-50][2];
+ 146   5                 show_database_qiehuan (rbuf[8]-50); 
+ 147   5              }
+ 148   4              break;
+ 149   4              case 0x35:
+ 150   4              {       
+ 151   5                pinlv_temp=tuijian_database[rbuf[8]-50][0]; 
+ 152   5                 nengliang_left_temp=tuijian_database[rbuf[8]-50][1];
+ 153   5                 nengliang_right_temp=tuijian_database[rbuf[8]-50][2];
+ 154   5                 show_database_qiehuan (rbuf[8]-50);
+ 155   5              }
+ 156   4              break;
+ 157   4              case 0x36:
+ 158   4              {       
+ 159   5                pinlv_temp=tuijian_database[rbuf[8]-50][0]; 
+ 160   5                 nengliang_left_temp=tuijian_database[rbuf[8]-50][1];
+ 161   5                 nengliang_right_temp=tuijian_database[rbuf[8]-50][2];
+ 162   5                 show_database_qiehuan (rbuf[8]-50); 
+ 163   5              }
+ 164   4              break;
+ 165   4              case 0x37:
+ 166   4              {       
+ 167   5                pinlv_temp=tuijian_database[rbuf[8]-50][0]; 
+ 168   5                 nengliang_left_temp=tuijian_database[rbuf[8]-50][1];
+ 169   5                 nengliang_right_temp=tuijian_database[rbuf[8]-50][2];
+ 170   5                 show_database_qiehuan (rbuf[8]-50);
+ 171   5              }
+ 172   4              break;
+ 173   4           }
+ 174   3        }
+ 175   2        }
+ 176   1      }
+ 177          
+ 178          
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 4   
+
+ 179          uchar Information (void)
+ 180          { 
+ 181   1        uchar work_info_jishu_temp,weizhi_temp1;
+ 182   1        uint weizhi_temp2;
+ 183   1      
+ 184   1        RH_HJ();
+ 185   1        fnShowwork_RH_HJ();
+ 186   1      
+ 187   1        fnShowwork_info_benci();
+ 188   1      
+ 189   1        work_info_jishu_temp=work_info_jishu;
+ 190   1        if(work_info_jishu_temp>10){
+ 191   2        if(work_info_weizhishu<10)
+ 192   2        {
+ 193   3           weizhi_temp1=10-work_info_weizhishu;
+ 194   3           work_info_jishu_temp=10;
+ 195   3           while (work_info_jishu_temp){
+ 196   4             
+ 197   4             if(weizhi_temp1>0){
+ 198   5             weizhi_temp2= Address_work_info_state_jishu-weizhi_temp1*32;
+ 199   5             weizhi_temp1--;
+ 200   5           }else{
+ 201   5             weizhi_temp2=work_info_weizhi-work_info_jishu_temp*32;
+ 202   5           }
+ 203   4             read_data(0xa0,weizhi_temp2,work_info_read,15);
+ 204   4           Delay( 1000 );
+ 205   4           fnShowwork_info_lishi(work_info_jishu_temp);
+ 206   4             work_info_jishu_temp--;
+ 207   4          }
+ 208   3        }else
+ 209   2        {
+ 210   3          work_info_jishu_temp=10;
+ 211   3          while (work_info_jishu_temp){
+ 212   4          
+ 213   4            read_data(0xa0,work_info_weizhi-work_info_jishu_temp*32,work_info_read,15);
+ 214   4          Delay( 1000 );
+ 215   4          fnShowwork_info_lishi(work_info_jishu_temp);
+ 216   4            work_info_jishu_temp--;
+ 217   4      
+ 218   4          }
+ 219   3        }
+ 220   2      
+ 221   2        }else{
+ 222   2        while (work_info_jishu_temp){
+ 223   3          
+ 224   3          read_data(0xa0,work_info_weizhi-work_info_jishu_temp*32,work_info_read,15);
+ 225   3          Delay( 1000 );
+ 226   3          fnShowwork_info_lishi(work_info_jishu_temp);
+ 227   3          work_info_jishu_temp--;
+ 228   3      
+ 229   3        }
+ 230   2        }
+ 231   1       change_picture(0x03);
+ 232   1         
+ 233   1       while (1)
+ 234   1       {  
+ 235   2         if (rinterrupt==rinterrupt_Yes)
+ 236   2          {  
+ 237   3          rinterrupt = rinterrupt_No;
+ 238   3           switch ( rbuf[8] )
+ 239   3           {
+ 240   4               
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 5   
+
+ 241   4              case 0x20:
+ 242   4              {       
+ 243   5                  change_picture(0x02);
+ 244   5                return 1;
+ 245   5              }
+ 246   4              break;
+ 247   4              case 0x21:
+ 248   4              {       
+ 249   5               
+ 250   5              }
+ 251   4              break;
+ 252   4           }
+ 253   3        }
+ 254   2        }   
+ 255   1         
+ 256   1         
+ 257   1      }
+ 258          
+ 259          
+ 260          
+ 261          
+ 262          /*0--½øÈë´ý»ú¡¢1--·µ»ØÉè²Î*/
+ 263          uchar DaiJi (void)
+ 264          {    
+ 265   1            
+ 266   1        //ÏÔÊ¾ÐÅÏ¢Ë¢ÐÂ    
+ 267   1        Display_Energy_left( SetEnergy_left);
+ 268   1        Display_Energy_right( SetEnergy_right);
+ 269   1        Display_Frequency_left( SetFrequency );
+ 270   1        Display_Frequency_right( SetFrequency );          
+ 271   1        Power = SetFrequency*SetEnergy_right;
+ 272   1        Display_power_right( Power );
+ 273   1        Power = SetFrequency*SetEnergy_left;
+ 274   1        Display_power_left( Power );
+ 275   1        
+ 276   1        fnShowdaiji();  
+ 277   1        /*¹Ø±ÕÍâ¹âÕ¢*/
+ 278   1        fnguangzha_off();
+ 279   1        /*Æô¶¯µç»ú¹ÊÕÏ¼à²â*/
+ 280   1        fnSelectTimer2_Fun2_first ();
+ 281   1        while (1)
+ 282   1        {
+ 283   2          if ( CheckZC_dai_zhun_Discharge( ) )/*¼ì²âÁ÷³Ì¡¢Ë®ÎÂ¼ì²â*/
+ 284   2          {
+ 285   3            return 1;
+ 286   3          }
+ 287   2          if (rinterrupt_ld==rinterrupt_Yes)
+ 288   2            {  
+ 289   3              rinterrupt_ld = rinterrupt_No;
+ 290   3              switch ( rbuf[8] )
+ 291   3              {
+ 292   4               
+ 293   4              case 0x00:
+ 294   4              {       
+ 295   5                onf_flag = 1;
+ 296   5                pwm_ld_data=0;
+ 297   5               show_ldoff_qiehuan();
+ 298   5              }
+ 299   4              break;
+ 300   4              case 0x01:
+ 301   4              {       
+ 302   5                onf_flag = 0;
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 6   
+
+ 303   5                pwm_ld_data=10000;
+ 304   5               show_ldon_qiehuan();
+ 305   5              }
+ 306   4              break;
+ 307   4              case 0x02:
+ 308   4              {       
+ 309   5               pwm_ld_data=20000;
+ 310   5              }
+ 311   4              break;
+ 312   4              case 0x03:
+ 313   4              {       
+ 314   5               pwm_ld_data=30000;
+ 315   5              }
+ 316   4              break;
+ 317   4              case 0x04:
+ 318   4              {       
+ 319   5               pwm_ld_data=40000;
+ 320   5              }
+ 321   4              break;
+ 322   4              case 0x05:
+ 323   4              {       
+ 324   5               pwm_ld_data=55000;
+ 325   5              }
+ 326   4              break;
+ 327   4              }
+ 328   3              Pwm_LD(pwm_ld_data);
+ 329   3      
+ 330   3            }
+ 331   2          if (rinterrupt==rinterrupt_Yes)
+ 332   2          {  
+ 333   3            rinterrupt = rinterrupt_No;
+ 334   3            switch ( rbuf[8] )
+ 335   3            {
+ 336   4               
+ 337   4              case 0x00:
+ 338   4              {
+ 339   5                FlagPara = parachang;
+ 340   5                if(double_pluse_flag){
+ 341   6                    if(SetFrequency>6)
+ 342   6                    {
+ 343   7                      SetFrequency -=2;       /*12~40hz ÆµÂÊ¼õ2*/
+ 344   7      //                Alarm(sound7);
+ 345   7                    }
+ 346   6                    else if(SetFrequency>3)
+ 347   6                    {                              /*5~11hz ÆµÂÊ¼õ1*/
+ 348   7                      SetFrequency --;
+ 349   7      //                Alarm(sound7);
+ 350   7                    }
+ 351   6                    else
+ 352   6                    {                             /*ÆµÂÊ¼õÔ½½ç*/
+ 353   7      //                Alarm(sound3);
+ 354   7                    }
+ 355   6                    
+ 356   6                }else{
+ 357   6                  if(SetFrequency>minFreq)
+ 358   6                  {
+ 359   7                    if (SetFrequency>40)
+ 360   7                    {
+ 361   8                      SetFrequency -=5;
+ 362   8      
+ 363   8                    }
+ 364   7                    else if(SetFrequency==40)
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 7   
+
+ 365   7                    {                               /*40hz ÆµÂÊ¼õ4*/
+ 366   8                      SetFrequency -=4;
+ 367   8      
+ 368   8                    }
+ 369   7                    else if (SetFrequency>24)
+ 370   7                    {
+ 371   8                      SetFrequency -=3;
+ 372   8      
+ 373   8                    }
+ 374   7                    else if (SetFrequency>=LimitFrequency)
+ 375   7                    {
+ 376   8                      SetFrequency--;
+ 377   8                      SetFrequency--;
+ 378   8                    }
+ 379   7                    else
+ 380   7                    {
+ 381   8                      SetFrequency--;
+ 382   8                    }
+ 383   7      //              Alarm(sound7);            
+ 384   7                  }
+ 385   6                  else
+ 386   6                  {
+ 387   7      //              Alarm(sound3);
+ 388   7                  }
+ 389   6      
+ 390   6                }
+ 391   5      
+ 392   5                CalMaxEner_Ho();
+ 393   5                if (SetEnergy_left>maxLimitSetEnergy_Ho)
+ 394   5                {
+ 395   6                  SetEnergy_left = maxLimitSetEnergy_Ho;
+ 396   6                  Display_Energy_left( SetEnergy_left);
+ 397   6                }
+ 398   5                if (SetEnergy_right>maxLimitSetEnergy_Ho)
+ 399   5                {
+ 400   6                  SetEnergy_right = maxLimitSetEnergy_Ho;
+ 401   6                  Display_Energy_right( SetEnergy_right);
+ 402   6                }
+ 403   5                Display_Frequency_left( SetFrequency );
+ 404   5                Display_Frequency_right( SetFrequency );  
+ 405   5                Power = SetFrequency*SetEnergy_left;
+ 406   5                Display_power_left( Power );
+ 407   5                Power = SetFrequency*SetEnergy_right;
+ 408   5                Display_power_right( Power );
+ 409   5      
+ 410   5              }
+ 411   4              break;
+ 412   4              case 0x01:
+ 413   4              {
+ 414   5                FlagPara = parachang;
+ 415   5                if(double_pluse_flag){
+ 416   6                    if( SetFrequency<6 )
+ 417   6                    {
+ 418   7                      SetFrequency++;       /*5~11hz ÆµÂÊ¼Ó1*/
+ 419   7      //                Alarm(sound7);
+ 420   7                    }
+ 421   6                     else if(SetFrequency<30)
+ 422   6                    {                               /*12~40hz ÆµÂÊ¼Ó2*/
+ 423   7                      SetFrequency +=2;
+ 424   7      //                Alarm(sound7);
+ 425   7                    }
+ 426   6                    else
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 8   
+
+ 427   6                    {                             /*ÆµÂÊ¼ÓÔ½½ç*/
+ 428   7      //                Alarm(sound3);
+ 429   7                    }
+ 430   6                }else{
+ 431   6                    if( SetFrequency<maxFreq )
+ 432   6                    {
+ 433   7                      if( SetFrequency<12 )
+ 434   7                      {
+ 435   8                        SetFrequency++;       /*5~11hz ÆµÂÊ¼Ó1*/
+ 436   8                      }
+ 437   7                      else if(SetFrequency<24)
+ 438   7                      {                               /*12~22hz ÆµÂÊ¼Ó2*/
+ 439   8                        SetFrequency +=2;
+ 440   8            
+ 441   8                      }
+ 442   7                      else if(SetFrequency<36)
+ 443   7                      {                              /*24~33hz ÆµÂÊ¼Ó3*/
+ 444   8                        SetFrequency +=3;
+ 445   8                      }
+ 446   7                      else if(SetFrequency==36)
+ 447   7                      {                              /*36hz ÆµÂÊ¼Ó4*/
+ 448   8                        SetFrequency +=4;
+ 449   8                      }
+ 450   7                      else if(SetFrequency<maxFreq)
+ 451   7                      {                              /*40~55hz ÆµÂÊ¼Ó5*/
+ 452   8                        SetFrequency +=5;
+ 453   8                      }
+ 454   7      //                Alarm(sound7);
+ 455   7                    }
+ 456   6                           else
+ 457   6                    {
+ 458   7                      /*ÆµÂÊ¼ÓÔ½½ç*/
+ 459   7      //                Alarm(sound3);
+ 460   7                    }
+ 461   6                }
+ 462   5                CalMaxEner_Ho();
+ 463   5                if (SetEnergy_left>maxLimitSetEnergy_Ho)
+ 464   5                {
+ 465   6                  SetEnergy_left= maxLimitSetEnergy_Ho;
+ 466   6                  Display_Energy_left( SetEnergy_left);
+ 467   6                }
+ 468   5                if (SetEnergy_right>maxLimitSetEnergy_Ho)
+ 469   5                {
+ 470   6                  SetEnergy_right = maxLimitSetEnergy_Ho;
+ 471   6                  Display_Energy_right( SetEnergy_right);
+ 472   6                }
+ 473   5                Display_Frequency_left( SetFrequency );
+ 474   5                Display_Frequency_right( SetFrequency );  
+ 475   5                Power = SetFrequency*SetEnergy_left;
+ 476   5                Display_power_left( Power );
+ 477   5                Power = SetFrequency*SetEnergy_right;
+ 478   5                Display_power_right( Power );
+ 479   5                
+ 480   5              }
+ 481   4              break;
+ 482   4              case 0x02:
+ 483   4               {
+ 484   5                FlagPara = parachang;
+ 485   5                if(SetEnergy_left>minEner)
+ 486   5                {
+ 487   6                  SetEnergy_left--;
+ 488   6      //            Alarm (sound7);
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 9   
+
+ 489   6                }
+ 490   5                else
+ 491   5                {
+ 492   6      //            Alarm (sound3);
+ 493   6                }
+ 494   5                Display_Energy_left( SetEnergy_left);
+ 495   5                Power = SetFrequency*SetEnergy_left;
+ 496   5                Display_power_left( Power );
+ 497   5      
+ 498   5              }
+ 499   4              break;
+ 500   4              case 0x03:
+ 501   4              {
+ 502   5                FlagPara = parachang;
+ 503   5                CalMaxEner_Ho();
+ 504   5                if((SetEnergy_left<maxLimitSetEnergy_Ho)&&(SetEnergy_left<maxEner))
+ 505   5                {
+ 506   6                  SetEnergy_left++;
+ 507   6      //            Alarm (sound7);
+ 508   6                }
+ 509   5                else
+ 510   5                {
+ 511   6      //            Alarm (sound3);
+ 512   6                }
+ 513   5                Display_Energy_left( SetEnergy_left);
+ 514   5                Power = SetFrequency*SetEnergy_left;
+ 515   5                Display_power_left( Power );
+ 516   5      
+ 517   5      
+ 518   5              }
+ 519   4              break;
+ 520   4      
+ 521   4              case 0x04:
+ 522   4              {
+ 523   5                FlagPara = parachang;
+ 524   5                if(double_pluse_flag){
+ 525   6                    if(SetFrequency>6)
+ 526   6                    {
+ 527   7                      SetFrequency -=2;       /*12~40hz ÆµÂÊ¼õ2*/
+ 528   7      //                Alarm(sound7);
+ 529   7                    }
+ 530   6                    else if(SetFrequency>3)
+ 531   6                    {                              /*5~11hz ÆµÂÊ¼õ1*/
+ 532   7                      SetFrequency --;
+ 533   7      //                Alarm(sound7);
+ 534   7                    }
+ 535   6                    else
+ 536   6                    {                             /*ÆµÂÊ¼õÔ½½ç*/
+ 537   7      //                Alarm(sound3);
+ 538   7                    }
+ 539   6                    
+ 540   6                }else{
+ 541   6                  if(SetFrequency>minFreq)
+ 542   6                  {
+ 543   7                    if (SetFrequency>40)
+ 544   7                    {
+ 545   8                      SetFrequency -=5;
+ 546   8      
+ 547   8                    }
+ 548   7                    else if(SetFrequency==40)
+ 549   7                    {                               /*40hz ÆµÂÊ¼õ4*/
+ 550   8                      SetFrequency -=4;
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 10  
+
+ 551   8      
+ 552   8                    }
+ 553   7                    else if (SetFrequency>24)
+ 554   7                    {
+ 555   8                      SetFrequency -=3;
+ 556   8      
+ 557   8                    }
+ 558   7                    else if (SetFrequency>=LimitFrequency)
+ 559   7                    {
+ 560   8                      SetFrequency--;
+ 561   8                      SetFrequency--;
+ 562   8                    }
+ 563   7                    else
+ 564   7                    {
+ 565   8                      SetFrequency--;
+ 566   8                    }
+ 567   7      //              Alarm(sound7);            
+ 568   7                  }
+ 569   6                  else
+ 570   6                  {
+ 571   7      //              Alarm(sound3);
+ 572   7                  }
+ 573   6      
+ 574   6                }
+ 575   5                CalMaxEner_Ho();
+ 576   5                if (SetEnergy_left>maxLimitSetEnergy_Ho)
+ 577   5                {
+ 578   6                  SetEnergy_left= maxLimitSetEnergy_Ho;
+ 579   6                  Display_Energy_left( SetEnergy_left);
+ 580   6                }
+ 581   5                if (SetEnergy_right>maxLimitSetEnergy_Ho)
+ 582   5                {
+ 583   6                  SetEnergy_right = maxLimitSetEnergy_Ho;
+ 584   6                  Display_Energy_right( SetEnergy_right);
+ 585   6                }
+ 586   5                Display_Frequency_left( SetFrequency );
+ 587   5                Display_Frequency_right( SetFrequency );          
+ 588   5                Power = SetFrequency*SetEnergy_right;
+ 589   5                Display_power_right( Power );
+ 590   5                Power = SetFrequency*SetEnergy_left;
+ 591   5                Display_power_left( Power );
+ 592   5      
+ 593   5              }
+ 594   4              break;
+ 595   4              case 0x05:
+ 596   4              {
+ 597   5                FlagPara = parachang;
+ 598   5                if(double_pluse_flag){
+ 599   6                    if( SetFrequency<6 )
+ 600   6                    {
+ 601   7                      SetFrequency++;       /*5~11hz ÆµÂÊ¼Ó1*/
+ 602   7      //                Alarm(sound7);
+ 603   7                    }
+ 604   6                     else if(SetFrequency<30)
+ 605   6                    {                               /*12~40hz ÆµÂÊ¼Ó2*/
+ 606   7                      SetFrequency +=2;
+ 607   7      //                Alarm(sound7);
+ 608   7                    }
+ 609   6                    else
+ 610   6                    {                             /*ÆµÂÊ¼ÓÔ½½ç*/
+ 611   7      //                Alarm(sound3);
+ 612   7                    }
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 11  
+
+ 613   6                }else{
+ 614   6                    if( SetFrequency<maxFreq )
+ 615   6                    {
+ 616   7                      if( SetFrequency<12 )
+ 617   7                      {
+ 618   8                        SetFrequency++;       /*5~11hz ÆµÂÊ¼Ó1*/
+ 619   8                      }
+ 620   7                      else if(SetFrequency<24)
+ 621   7                      {                               /*12~22hz ÆµÂÊ¼Ó2*/
+ 622   8                        SetFrequency +=2;
+ 623   8            
+ 624   8                      }
+ 625   7                      else if(SetFrequency<36)
+ 626   7                      {                              /*24~33hz ÆµÂÊ¼Ó3*/
+ 627   8                        SetFrequency +=3;
+ 628   8                      }
+ 629   7                      else if(SetFrequency==36)
+ 630   7                      {                              /*36hz ÆµÂÊ¼Ó4*/
+ 631   8                        SetFrequency +=4;
+ 632   8                      }
+ 633   7                      else if(SetFrequency<maxFreq)
+ 634   7                      {                              /*40~55hz ÆµÂÊ¼Ó5*/
+ 635   8                        SetFrequency +=5;
+ 636   8                      }
+ 637   7      //                Alarm(sound7);
+ 638   7                    }
+ 639   6                           else
+ 640   6                    {
+ 641   7                      /*ÆµÂÊ¼ÓÔ½½ç*/
+ 642   7      //                Alarm(sound3);
+ 643   7                    }
+ 644   6                }
+ 645   5                CalMaxEner_Ho();
+ 646   5                if (SetEnergy_left>maxLimitSetEnergy_Ho)
+ 647   5                {
+ 648   6                  SetEnergy_left= maxLimitSetEnergy_Ho;
+ 649   6                  Display_Energy_left( SetEnergy_left);
+ 650   6                }
+ 651   5                if (SetEnergy_right>maxLimitSetEnergy_Ho)
+ 652   5                {
+ 653   6                  SetEnergy_right = maxLimitSetEnergy_Ho;
+ 654   6                  Display_Energy_right( SetEnergy_right);
+ 655   6                }
+ 656   5                Display_Frequency_left( SetFrequency );
+ 657   5                Display_Frequency_right( SetFrequency );          
+ 658   5                Power = SetFrequency*SetEnergy_right;
+ 659   5                Display_power_right( Power );
+ 660   5                Power = SetFrequency*SetEnergy_left;
+ 661   5                Display_power_left( Power );
+ 662   5              
+ 663   5      
+ 664   5                
+ 665   5              }
+ 666   4              break;
+ 667   4              case 0x06:
+ 668   4               {
+ 669   5                FlagPara = parachang;
+ 670   5                if(SetEnergy_right>minEner)
+ 671   5                {
+ 672   6                  SetEnergy_right--;
+ 673   6        //          Alarm (sound7);
+ 674   6                }
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 12  
+
+ 675   5                else
+ 676   5                {
+ 677   6        //          Alarm (sound3);
+ 678   6                }
+ 679   5                Display_Energy_right( SetEnergy_right);
+ 680   5                Power = SetFrequency*SetEnergy_right;
+ 681   5                Display_power_right( Power );
+ 682   5              
+ 683   5              }
+ 684   4              break;
+ 685   4              case 0x07:
+ 686   4              {
+ 687   5                FlagPara = parachang;
+ 688   5                CalMaxEner_Ho();
+ 689   5                if((SetEnergy_right<maxLimitSetEnergy_Ho)&&(SetEnergy_right<maxEner))
+ 690   5                {
+ 691   6                  SetEnergy_right++;
+ 692   6        //          Alarm (sound7);
+ 693   6                }
+ 694   5                else
+ 695   5                {
+ 696   6        //          Alarm (sound3);
+ 697   6                }
+ 698   5                Display_Energy_right( SetEnergy_right);
+ 699   5                Power = SetFrequency*SetEnergy_right;
+ 700   5                Display_power_right( Power );       
+ 701   5      
+ 702   5              }
+ 703   4              break;
+ 704   4              
+ 705   4              
+ 706   4              
+ 707   4      //        case 0x08:
+ 708   4      //        {
+ 709   4      //          change_picture(12);
+ 710   4      //          return 3;
+ 711   4      
+ 712   4      //        }
+ 713   4      //        break;
+ 714   4              case 0x09:
+ 715   4              {
+ 716   5                
+ 717   5                return 4;
+ 718   5      
+ 719   5              }
+ 720   4              break;
+ 721   4      
+ 722   4              case 0x0b:/*Ö¸Ê¾¹âÉÁºã*/
+ 723   4              {
+ 724   5                if( fls_flag==0 ) //ÉÁ
+ 725   5                {
+ 726   6                  fls_flag = 1;
+ 727   6                  show_ldshan_qiehuan();
+ 728   6                }
+ 729   5                else       //ºã
+ 730   5                {
+ 731   6                  fls_flag = 0;
+ 732   6                  Pwm_LD(pwm_ld_data);
+ 733   6                  show_ldheng_qiehuan();
+ 734   6                  
+ 735   6                }
+ 736   5                
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 13  
+
+ 737   5                
+ 738   5              }
+ 739   4              break;  
+ 740   4              
+ 741   4              case 0x0e:/*Ö¸Ê¾¹â¿ª¹Ø*/
+ 742   4              {
+ 743   5                if( onf_flag==0 ) //¹Ø
+ 744   5                {
+ 745   6                  onf_flag = 1;
+ 746   6                  LCD_zengliangtiaojie_xiuzheng(0);
+ 747   6                  pwm_ld_data=0;
+ 748   6                  Pwm_LD(pwm_ld_data);
+ 749   6                  show_ldoff_qiehuan();
+ 750   6                }
+ 751   5                else       //¿ª
+ 752   5                {
+ 753   6                  onf_flag = 0;
+ 754   6                  LCD_zengliangtiaojie_xiuzheng(1);
+ 755   6                  pwm_ld_data=10000;
+ 756   6                  Pwm_LD(pwm_ld_data);
+ 757   6                  show_ldon_qiehuan();
+ 758   6                  
+ 759   6                }
+ 760   5                
+ 761   5                
+ 762   5              }
+ 763   4              break;  
+ 764   4              
+ 765   4              case 0x0d:
+ 766   4              {
+ 767   5                /*LCD[ÏµÍ³µ÷ÕûÖÐ]*/
+ 768   5                LCD_SystemAdjust();
+ 769   5              //  show_zhunbei_qiehuan();
+ 770   5      
+ 771   5                /*½ûÖ¹µç»ú¼ì²â¹¦ÄÜ*/
+ 772   5                biTestDianji = notTestDianji;
+ 773   5                
+ 774   5      
+ 775   5                
+ 776   5                if(FlagPara == parachang){
+ 777   6                  if( double_pluse_flag==0 )
+ 778   6                  {
+ 779   7                    /*±£´æÉèÖÃÆµÂÊÖµ*/
+ 780   7                    saveshuzu[0]=SetFrequency;
+ 781   7                    SetFrequency_only=SetFrequency;
+ 782   7                    write_data(0xa0,AddressFreq_left,saveshuzu,1);
+ 783   7                    /*Á¬Ðø´æ´¢ÑÓÊ±*/
+ 784   7                    Delay( 1000 );
+ 785   7                    /*±£´æÉèÖÃÄÜÁ¿Öµ*/
+ 786   7                    saveshuzu[0]=SetEnergy_left;
+ 787   7                    SetEnergy_left_only=SetEnergy_left;
+ 788   7                    write_data(0xa0,AddressEner_left,saveshuzu,1);
+ 789   7                    Delay( 1000 );
+ 790   7                    saveshuzu[0]=SetEnergy_right;
+ 791   7                    SetEnergy_right_only=SetEnergy_right;
+ 792   7                    write_data(0xa0,AddressEner_right,saveshuzu,1);
+ 793   7                    Delay( 1000 );
+ 794   7                
+ 795   7                  }
+ 796   6                  else
+ 797   6                  {
+ 798   7                    /*±£´æÉèÖÃÆµÂÊÖµ*/
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 14  
+
+ 799   7                    saveshuzu[0]=SetFrequency;
+ 800   7                    SetFrequency_double=SetFrequency;
+ 801   7                    write_data(0xa0,AddressFreq_left_double,saveshuzu,1);
+ 802   7                    /*Á¬Ðø´æ´¢ÑÓÊ±*/
+ 803   7                    Delay( 1000 );
+ 804   7                    /*±£´æÉèÖÃÄÜÁ¿Öµ*/
+ 805   7                    saveshuzu[0]=SetEnergy_left;
+ 806   7                    SetEnergy_left_double=SetEnergy_left;
+ 807   7                    write_data(0xa0,AddressEner_left_double,saveshuzu,1);
+ 808   7                    Delay( 1000 );    
+ 809   7                    saveshuzu[0]=SetEnergy_right;
+ 810   7                    SetEnergy_right_double=SetEnergy_right;
+ 811   7                    write_data(0xa0,AddressEner_right_double,saveshuzu,1);
+ 812   7                    Delay( 1000 );                
+ 813   7                  }
+ 814   6      
+ 815   6                  fnGenJuShangCiPinLvTiaoZheng(SetFrequency);//µ÷Õûµç»ú×ªËÙ
+ 816   6                  fnDianJiCheckAdjust( SetFrequency ); //µç»ú×ªËÙÎ¢µ÷£¬²âÁ¿ÖÜÆÚ
+ 817   6      
+ 818   6                  Power_FeedBack(SetEnergy_left);  //ÏÔÊ¾¹¦ÂÊ»òÄÜÁ¿·´À¡ÇúÏß²Î¿¼Öµ
+ 819   6                  Ener_Sleft_A=Ener_SA_temp;
+ 820   6                  Ener_Sleft_B=Ener_SB_temp;
+ 821   6                  if (Flag_ShowFeedBack==Show_Enable)
+ 822   6                  {   
+ 823   7                    Display_FeedBackEnergyVolt_left( Ener_Sleft_A*10,  Ener_Sleft_B*10);
+ 824   7                  }
+ 825   6                  
+ 826   6                  Power_FeedBack(SetEnergy_right);  //ÏÔÊ¾¹¦ÂÊ»òÄÜÁ¿·´À¡ÇúÏß²Î¿¼Öµ
+ 827   6                  Ener_Sright_A=Ener_SA_temp;
+ 828   6                  Ener_Sright_B=Ener_SB_temp;
+ 829   6                  if (Flag_ShowFeedBack==Show_Enable)
+ 830   6                  {   
+ 831   7                    Display_FeedBackEnergyVolt_right( Ener_Sright_A*10,  Ener_Sright_A*10);
+ 832   7                  }
+ 833   6                }
+ 834   5      
+ 835   5                
+ 836   5      
+ 837   5                /*ÉèÖÃÁ÷³Ì±êÖ¾*/
+ 838   5                Flag_Flow = Flag_ZhengChang;   
+ 839   5                
+ 840   5                return 2;
+ 841   5              
+ 842   5      
+ 843   5              }
+ 844   4              break;
+ 845   4      
+ 846   4              case 0x18: //¶ÌÂö³å
+ 847   4              {
+ 848   5                 FlagPara = parachang;
+ 849   5                 Pulse_time_left=6;
+ 850   5                 Pulse_time_right=6;
+ 851   5                 Pulse_time2=6;
+ 852   5                 long_short_pluse_flag=0;
+ 853   5                 LCD_Pulsetime();
+ 854   5                 show_short_qiehuan();
+ 855   5              }
+ 856   4              break;
+ 857   4              case 0x19://³¤Âö³å
+ 858   4              {
+ 859   5                 FlagPara = parachang;
+ 860   5                 Pulse_time_left=10;
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 15  
+
+ 861   5                 Pulse_time_right=10;
+ 862   5                 Pulse_time2=10;
+ 863   5                 long_short_pluse_flag=1;
+ 864   5                 LCD_Pulsetime();
+ 865   5                 show_long_qiehuan();
+ 866   5              }
+ 867   4              break;
+ 868   4              
+ 869   4              case 0x1A:  //µ¥Âö³åÇÐ»»
+ 870   4              {
+ 871   5                FlagPara = parachang;
+ 872   5      
+ 873   5                double_pluse_flag = 0;  //0 µ¥Âö³å  
+ 874   5                SetFrequency=SetFrequency_only;
+ 875   5                SetEnergy_left=SetEnergy_left_only;     
+ 876   5                SetEnergy_right=SetEnergy_right_only;   
+ 877   5                show_single_qiehuan();
+ 878   5      
+ 879   5                LCD_Pulsetime();
+ 880   5      
+ 881   5                Display_Energy_left( SetEnergy_left);
+ 882   5                Display_Energy_right( SetEnergy_right);
+ 883   5                Display_Frequency_left( SetFrequency );
+ 884   5                Display_Frequency_right( SetFrequency );          
+ 885   5                Power = SetFrequency*SetEnergy_right;
+ 886   5                Display_power_right( Power );
+ 887   5                Power = SetFrequency*SetEnergy_left;
+ 888   5                Display_power_left( Power );
+ 889   5      
+ 890   5              }
+ 891   4              break;
+ 892   4              
+ 893   4              case 0x1B:  //Ë«Âö³åÇÐ»»
+ 894   4              {
+ 895   5                FlagPara = parachang;
+ 896   5      
+ 897   5                double_pluse_flag = 1;  //1 ¶àÂö³å    
+ 898   5                SetFrequency=SetFrequency_double;
+ 899   5                SetEnergy_left=SetEnergy_left_double;   
+ 900   5                SetEnergy_right=SetEnergy_right_double; 
+ 901   5                show_double_qiehuan();
+ 902   5      
+ 903   5                LCD_Pulsetime();
+ 904   5                Display_Energy_left( SetEnergy_left);
+ 905   5                Display_Energy_right( SetEnergy_right);
+ 906   5                Display_Frequency_left( SetFrequency );
+ 907   5                Display_Frequency_right( SetFrequency );          
+ 908   5                Power = SetFrequency*SetEnergy_right;
+ 909   5                Display_power_right( Power );
+ 910   5                Power = SetFrequency*SetEnergy_left;
+ 911   5                Display_power_left( Power );
+ 912   5      
+ 913   5              }
+ 914   4              break;
+ 915   4              
+ 916   4      
+ 917   4              default:/*°´ÆäËü¼üÎÞÐ§*/
+ 918   4              {
+ 919   5      //          Alarm(sound3);
+ 920   5              }
+ 921   4              break;
+ 922   4              
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 16  
+
+ 923   4            }
+ 924   3          }
+ 925   2          
+ 926   2          
+ 927   2        }
+ 928   1      }
+ 929          
+ 930          
+ 931          
+ 932          uchar ZhunBei (void)
+ 933          {    
+ 934   1        uchar xiefang_pulse;     
+ 935   1        uchar SetEnergy_jishu;
+ 936   1      
+ 937   1        
+ 938   1        /*Ôö¼Ó´ò¹âÊ±°´´ý»ú¼ü·µ»Ø´ý»ú×´Ì¬*/
+ 939   1        #define HaltLaser2DaiJi_Enable 1
+ 940   1        #define HaltLaser2DaiJi_Disable 0
+ 941   1        bit HaltLaser2DaiJi = HaltLaser2DaiJi_Disable;
+ 942   1        
+ 943   1        
+ 944   1        /*³õÊ¼ÉèÖÃÎª·Ç³ä·Åµç×´Ì¬*/
+ 945   1        biDischanging = Dischanging_No;
+ 946   1          
+ 947   1        //¹âÕ¢´ò¿ªÇÒ¼ì²â
+ 948   1        fnguangzha_on();
+ 949   1        /*Æô¶¯µç»ú¹ÊÕÏ¼à²â*/
+ 950   1        fnSelectTimer2_Fun2_first ();
+ 951   1      
+ 952   1        //×¼±¸ÉÁË¸3´Î
+ 953   1        
+ 954   1        show_zhunbei_qiehuan();
+ 955   1        //Èç¹û²ÎÊýÓÐ¸Ä±ä£¬ÔòÐ¹·ÅµçÈÝ¿âµçÑ¹
+ 956   1        if (FlagPara!=paraunchang){
+ 957   2                for(xiefang_pulse=0;xiefang_pulse<50;xiefang_pulse++){   //·Åµç50´Î 0.5s
+ 958   3                  PULSE = 1;
+ 959   3                  Delay (20);
+ 960   3                  PULSE = 0;
+ 961   3                  Delay(1000);
+ 962   3                }     
+ 963   2        }
+ 964   1        show_daiji_qiehuan();
+ 965   1        if (FlagPara!=paraunchang){
+ 966   2                for(xiefang_pulse=0;xiefang_pulse<50;xiefang_pulse++){   //·Åµç50´Î 0.5s
+ 967   3                  PULSE = 1;
+ 968   3                  Delay (20);
+ 969   3                  PULSE = 0;
+ 970   3                  Delay(1000);
+ 971   3                }     
+ 972   2        }
+ 973   1        show_zhunbei_qiehuan();
+ 974   1        Delay (50000);
+ 975   1        show_daiji_qiehuan();
+ 976   1        Delay (50000);
+ 977   1        show_zhunbei_qiehuan();
+ 978   1        Delay (50000);
+ 979   1        show_daiji_qiehuan();
+ 980   1        Delay (50000);
+ 981   1        show_zhunbei_qiehuan();
+ 982   1      
+ 983   1        fnShowzhunbei ();
+ 984   1      //  Alarm(sound2);
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 17  
+
+ 985   1      
+ 986   1        while (1)
+ 987   1        {
+ 988   2          /*·Ç³ä·Åµç×´Ì¬*/
+ 989   2          if ( biDischanging==Dischanging_No )
+ 990   2          {   
+ 991   3            if (rinterrupt_ld==rinterrupt_Yes)
+ 992   3            {  
+ 993   4              rinterrupt_ld = rinterrupt_No;
+ 994   4              switch ( rbuf[8] )
+ 995   4              {
+ 996   5               
+ 997   5              case 0x00:
+ 998   5              {       
+ 999   6                onf_flag = 1;
+1000   6                pwm_ld_data=0;
+1001   6               show_ldoff_qiehuan();
+1002   6              }
+1003   5              break;
+1004   5              case 0x01:
+1005   5              {       
+1006   6                onf_flag = 0;
+1007   6                pwm_ld_data=10000;
+1008   6               show_ldon_qiehuan();
+1009   6              }
+1010   5              break;
+1011   5              case 0x02:
+1012   5              {       
+1013   6               pwm_ld_data=20000;
+1014   6              }
+1015   5              break;
+1016   5              case 0x03:
+1017   5              {       
+1018   6               pwm_ld_data=30000;
+1019   6              }
+1020   5              break;
+1021   5              case 0x04:
+1022   5              {       
+1023   6               pwm_ld_data=40000;
+1024   6              }
+1025   5              break;
+1026   5              case 0x05:
+1027   5              {       
+1028   6               pwm_ld_data=55000;
+1029   6              }
+1030   5              break;
+1031   5              }
+1032   4              Pwm_LD(pwm_ld_data);
+1033   4      
+1034   4            }
+1035   3          
+1036   3            if (rinterrupt==rinterrupt_Yes)
+1037   3            {  
+1038   4              rinterrupt = rinterrupt_No;
+1039   4              switch ( rbuf[8] )
+1040   4              {
+1041   5                     
+1042   5                  
+1043   5                case 0x02:
+1044   5                 {
+1045   6                FlagEnergy_L = decEnergy;
+1046   6                if(SetEnergy_left>minEner)
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 18  
+
+1047   6                {
+1048   7                  SetEnergy_left--;
+1049   7      //            Alarm (sound7);
+1050   7                }
+1051   6                else
+1052   6                {
+1053   7      //            Alarm (sound3);
+1054   7                }
+1055   6                Display_Energy_left( SetEnergy_left);
+1056   6                Power = SetFrequency*SetEnergy_left;
+1057   6                Display_power_left( Power );
+1058   6      
+1059   6                }
+1060   5                break;
+1061   5                case 0x03:
+1062   5                {
+1063   6                FlagEnergy_L = incEnergy;
+1064   6                CalMaxEner_Ho();
+1065   6                if((SetEnergy_left<maxLimitSetEnergy_Ho)&&(SetEnergy_left<maxEner))
+1066   6                {
+1067   7                  SetEnergy_left++;
+1068   7      //            Alarm (sound7);
+1069   7                }
+1070   6                else
+1071   6                {
+1072   7      //            Alarm (sound3);
+1073   7                }
+1074   6                Display_Energy_left( SetEnergy_left);
+1075   6                Power = SetFrequency*SetEnergy_left;
+1076   6                Display_power_left( Power );
+1077   6                }
+1078   5                break;
+1079   5                
+1080   5                case 0x06:
+1081   5                 {
+1082   6                FlagEnergy_R = decEnergy;
+1083   6                if(SetEnergy_right>minEner)
+1084   6                {
+1085   7                  SetEnergy_right--;
+1086   7          //        Alarm (sound7);
+1087   7                }
+1088   6                else
+1089   6                {
+1090   7          //        Alarm (sound3);
+1091   7                }
+1092   6                Display_Energy_right( SetEnergy_right);
+1093   6                Power = SetFrequency*SetEnergy_right;
+1094   6                Display_power_right( Power );
+1095   6      
+1096   6                }
+1097   5                break;
+1098   5                case 0x07:
+1099   5                {
+1100   6                FlagEnergy_R = incEnergy;
+1101   6                CalMaxEner_Ho();
+1102   6                if((SetEnergy_right<maxLimitSetEnergy_Ho)&&(SetEnergy_right<maxEner))
+1103   6                {
+1104   7                  SetEnergy_right++;
+1105   7        //          Alarm (sound7);
+1106   7                }
+1107   6                else
+1108   6                {
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 19  
+
+1109   7          //        Alarm (sound3);
+1110   7                }
+1111   6                Display_Energy_right( SetEnergy_right);
+1112   6                Power = SetFrequency*SetEnergy_right;
+1113   6                Display_power_right( Power );       
+1114   6      
+1115   6                }
+1116   5                break;                
+1117   5                
+1118   5                case 0x0c://´ý»ú
+1119   5                {
+1120   6      
+1121   6                      
+1122   6                  show_daiji_qiehuan();
+1123   6      //            Alarm (sound2);
+1124   6                  return 1;/*ÍË³ö×¼±¸×´Ì¬£¬·µ»Ø´ý»ú×´Ì¬*/
+1125   6                    
+1126   6      
+1127   6                }
+1128   5                break;
+1129   5                
+1130   5                case 0x0b:/*Ö¸Ê¾¹âÉÁºã*/
+1131   5                {
+1132   6                if( fls_flag==0 ) //ÉÁ
+1133   6                {
+1134   7                  fls_flag = 1;
+1135   7                  show_ldshan_qiehuan();
+1136   7                }
+1137   6                else       //ºã
+1138   6                {
+1139   7                  fls_flag = 0;
+1140   7                  Pwm_LD(pwm_ld_data);
+1141   7                  show_ldheng_qiehuan();
+1142   7                  
+1143   7                }
+1144   6                
+1145   6                
+1146   6                }
+1147   5                break;  
+1148   5      
+1149   5                case 0x0e:/*Ö¸Ê¾¹â¿ª¹Ø*/
+1150   5                {
+1151   6                  if( onf_flag==0 ) //¹Ø
+1152   6                  {
+1153   7                    onf_flag = 1;
+1154   7                    LCD_zengliangtiaojie_xiuzheng(0);
+1155   7                    pwm_ld_data=0;
+1156   7                    Pwm_LD(pwm_ld_data);
+1157   7                    show_ldoff_qiehuan();
+1158   7                  }
+1159   6                  else       //¿ª
+1160   6                  {
+1161   7                    onf_flag = 0;
+1162   7                    LCD_zengliangtiaojie_xiuzheng(1);
+1163   7                    pwm_ld_data=10000;
+1164   7                    Pwm_LD(pwm_ld_data);
+1165   7                    show_ldon_qiehuan();
+1166   7                    
+1167   7                  }               
+1168   6                }
+1169   5                break;  
+1170   5                
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 20  
+
+1171   5                default:/*°´ÆäËü¼üÎÞÐ§*/
+1172   5                {
+1173   6      //                Alarm(sound3);
+1174   6                }
+1175   5                break;
+1176   5                    
+1177   5              }
+1178   4            }
+1179   3            /*Ö»ÔÚ·Ç³ä·Åµç×´Ì¬ÔÊÐíÓÃ»§Ê¹ÓÃ¼üÅÌ*/
+1180   3            
+1181   3          }
+1182   2          /*·Ç³ä·Åµç×´Ì¬*/
+1183   2          if ( biDischanging==Dischanging_No )
+1184   2          {
+1185   3            /*Ö´ÐÐÒ»°ã¼ì²â*/
+1186   3            if ( CheckZC_dai_zhun_Discharge() )
+1187   3            {
+1188   4              return 1;
+1189   4            }
+1190   3            
+1191   3            if (MB_SGX==Check_Enable)   //Ã¿2ÃëÖÓ¼ì²âÒ»´ÎÉäÆµ¿¨
+1192   3            {
+1193   4        //      check_GX_zhunbei();
+1194   4            }
+1195   3            
+1196   3            /*¸Õ¸Õ²ÈÏÂ½ÅÌ¤¿ª¹Ø*/
+1197   3            P4status=P4;
+1198   3            if ( SJTA0==1)
+1199   3            {
+1200   4              /*LCD[ÖÎÁÆÖÐ----]*/
+1201   4              LCD_Curing( );
+1202   4              show_fashe_left();
+1203   4              SetEnergy_jishu = SetEnergy_left;
+1204   4              /*ÉèÖÃµ±Ç°Îª³ä·Åµç×´Ì¬*/
+1205   4              biDischanging = Dischanging_Yes;                
+1206   4              /*Âö³å¼ÆÊýÇåÁã*/
+1207   4              CurPulse = 0;
+1208   4              /*³¬²î-50%¡¢³äµçµçÑ¹³¬1000V£¬¼Æ´ÎÇåÁã*/
+1209   4              Count_F50V1000 = 0;
+1210   4              Pulse_time=Pulse_time_left;
+1211   4              if( double_pluse_flag==0&&long_short_pluse_flag==1 ) //µ¥Âö³å ³¤Âö³å
+1212   4              {
+1213   5      //          if(SetFrequency==20&&SetEnergy_left>40)
+1214   5      //          {
+1215   5      //            Pulse_time=13;
+1216   5      //          }
+1217   5      // //           if(SetFrequency==24&&SetEnergy_left>35)
+1218   5      // //           {
+1219   5      // //             Pulse_time=12;
+1220   5      // //           }
+1221   5      //                          
+1222   5      //          if(SetFrequency==40&&SetEnergy_left>15)
+1223   5      //          {
+1224   5      //            Pulse_time=11;
+1225   5      //          }
+1226   5              }
+1227   4      
+1228   4      
+1229   4              //ÏÔÊ¾¹¦ÂÊ»òÄÜÁ¿·´À¡ÇúÏß²Î¿¼Öµ
+1230   4              if (FlagEnergy_L!=unChangEnergy)
+1231   4              {         
+1232   5                Power_FeedBack(SetEnergy_left);  //ÏÔÊ¾¹¦ÂÊ»òÄÜÁ¿·´À¡ÇúÏß²Î¿¼Öµ
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 21  
+
+1233   5                Ener_Sleft_A=Ener_SA_temp;
+1234   5                Ener_Sleft_B=Ener_SB_temp;
+1235   5      
+1236   5                if (Flag_ShowFeedBack==Show_Enable)
+1237   5                {   
+1238   6                  Display_FeedBackEnergyVolt_left( Ener_Sleft_A*10,  Ener_Sleft_B*10);
+1239   6                }
+1240   5      
+1241   5                if( double_pluse_flag)
+1242   5                  {
+1243   6                    /*±£´æÉèÖÃÄÜÁ¿Öµ*/
+1244   6                    saveshuzu[0]=SetEnergy_left;
+1245   6                    SetEnergy_left_double=SetEnergy_left;
+1246   6                    write_data(0xa0,AddressEner_left_double,saveshuzu,1);
+1247   6                    Delay( 1000 );          
+1248   6                  }
+1249   5                  else
+1250   5                  {
+1251   6                    /*±£´æÉèÖÃÄÜÁ¿Öµ*/
+1252   6                    saveshuzu[0]=SetEnergy_left;
+1253   6                    SetEnergy_left_only=SetEnergy_left;
+1254   6                    write_data(0xa0,AddressEner_left,saveshuzu,1);
+1255   6                    Delay( 1000 );
+1256   6                            
+1257   6                  }
+1258   5                  
+1259   5              }
+1260   4              //Èç¹û×¼±¸×´Ì¬ÏÂÄÜÁ¿½µµÍ£¬ÔòÐ¹·ÅµçÈÝ¿âµçÑ¹
+1261   4              if (FlagEnergy_L==decEnergy||((JT_L_R==Right)&&(SetEnergy_right>SetEnergy_left+5))){
+1262   5                for(xiefang_pulse=0;xiefang_pulse<100;xiefang_pulse++){  //·Åµç100´Î  1s
+1263   6                  PULSE = 1;
+1264   6                  Delay (25);
+1265   6                  PULSE = 0;
+1266   6                  Delay(975);
+1267   6                }
+1268   5                      
+1269   5              }
+1270   4      
+1271   4              /*³õÊ¼³äµçµçÑ¹*/
+1272   4              if (FlagEnergy_L!=unChangEnergy||FlagPara!=paraunchang||JT_L_R==Right)
+1273   4              {
+1274   5                /*Èç¹û²ÎÊý·¢Éú±ä»¯£¬Ê¹ÓÃÍ³Ò»³õÊ¼Öµ*/
+1275   5                if( double_pluse_flag)
+1276   5                {
+1277   6                  if(Pulse_time>6){
+1278   7                  uiChangVolt_A = Vc0+(SetEnergy_left/2-5)*3;
+1279   7                  uiChangVolt_B = Vc0+(SetEnergy_left/2-5)*3;
+1280   7                  uiChangVolt_A_MAX=550;    //¸³³õÖµ550v
+1281   7                  uiChangVolt_B_MAX=550;
+1282   7                }else{
+1283   7                  uiChangVolt_A = 600+(SetEnergy_left/2-5)*4;
+1284   7                  uiChangVolt_B = 600+(SetEnergy_left/2-5)*4;
+1285   7                  uiChangVolt_A_MAX=650;    //¸³³õÖµ550v
+1286   7                  uiChangVolt_B_MAX=650;
+1287   7                  if(uiChangVolt_A>=750)
+1288   7                      uiChangVolt_A=750;
+1289   7                  if(uiChangVolt_B>=750)
+1290   7                      uiChangVolt_B=750;
+1291   7                }
+1292   6                
+1293   6                }else
+1294   5                {
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 22  
+
+1295   6                  if(Pulse_time>6){
+1296   7                  uiChangVolt_A = Vc0+(SetEnergy_left-5)*4;
+1297   7                  uiChangVolt_B = Vc0+(SetEnergy_left-5)*4;
+1298   7                  uiChangVolt_A_MAX=550;    //¸³³õÖµ550v
+1299   7                  uiChangVolt_B_MAX=550;
+1300   7                }else{
+1301   7                  uiChangVolt_A = 620+(SetEnergy_left-5)*7;
+1302   7                  uiChangVolt_B = 620+(SetEnergy_left-5)*7;
+1303   7                  uiChangVolt_A_MAX=650;    //¸³³õÖµ550v
+1304   7                  uiChangVolt_B_MAX=650;
+1305   7                  if(uiChangVolt_A>=750)
+1306   7                      uiChangVolt_A=750;
+1307   7                  if(uiChangVolt_B>=750)
+1308   7                      uiChangVolt_B=750;
+1309   7                }
+1310   6                }
+1311   5                
+1312   5                Ener_A_MAX=2; //·ÀÖ¹µ×Ôë²úÉúµÄ¸ÉÈÅ£¬¸³³õÖµ0.2v
+1313   5                Ener_B_MAX=2;
+1314   5                Tiaojie_A =0;
+1315   5                Tiaojie_B =0;
+1316   5                shuiwen_chuli_old=shuiwen_chuli;
+1317   5              }
+1318   4              else
+1319   4              { //²ÎÊýÎª±ä»¯£¬ÑØÓÃÉÏ´Î³äµçµçÑ¹,ÓÉÓÚÔÙ´Î²È½ÅÌ¤Ê±Ë®ÎÂÏÂ½µ¶øÊ¹µÃÇ°¼¸¸öÂö³åÄÜÁ¿¹ý¸ß£¬ËùÒÔÊÊµ±½µµÍÉÏ´Î±£´
+             -æµÄµçÑ¹Öµ
+1320   5                if( double_pluse_flag )
+1321   5                {
+1322   6                  if(SetEnergy_left<=30){ 
+1323   7                    if( SetFrequency>=3 && SetFrequency<6 ){
+1324   8                        if(ucChoiceABlight==ALight){
+1325   9                          uiChangVolt_A = uiChangVolt_A_last-SetEnergy_left*5/10;                 
+1326   9                        }else if(ucChoiceABlight==BLight){
+1327   9                          uiChangVolt_B = uiChangVolt_B_last-SetEnergy_left*5/10;
+1328   9                        }
+1329   8                    }else if ( SetFrequency>=6 && SetFrequency<=30 ){
+1330   8                      uiChangVolt_A = uiChangVolt_A_last-SetEnergy_left*5/10;
+1331   8                      uiChangVolt_B = uiChangVolt_B_last-SetEnergy_left*5/10;
+1332   8                    }
+1333   7                  }else{
+1334   7                    if( SetFrequency>=3 && SetFrequency<6 ){
+1335   8                        if(ucChoiceABlight==ALight){
+1336   9                          uiChangVolt_A = uiChangVolt_A_last-SetEnergy_left;                
+1337   9                        }else if(ucChoiceABlight==BLight){
+1338   9                          uiChangVolt_B = uiChangVolt_B_last-SetEnergy_left;
+1339   9                        }
+1340   8                    }else if ( SetFrequency>=6 && SetFrequency<=30 ){
+1341   8                      uiChangVolt_A = uiChangVolt_A_last-SetEnergy_left;
+1342   8                      uiChangVolt_B = uiChangVolt_B_last-SetEnergy_left;
+1343   8                    }
+1344   7                  
+1345   7                  }
+1346   6                }else
+1347   5                {
+1348   6                  if(SetEnergy_left<=15){ 
+1349   7                    if( SetFrequency>=5 && SetFrequency<=12 ){
+1350   8                        if(ucChoiceABlight==ALight){
+1351   9                          uiChangVolt_A = uiChangVolt_A_last-SetEnergy_left*5/10;                 
+1352   9                        }else if(ucChoiceABlight==BLight){
+1353   9                          uiChangVolt_B = uiChangVolt_B_last-SetEnergy_left*5/10;
+1354   9                        }
+1355   8                    }else if ( SetFrequency>=14 && SetFrequency<=60 ){
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 23  
+
+1356   8                      uiChangVolt_A = uiChangVolt_A_last-SetEnergy_left*5/10;
+1357   8                      uiChangVolt_B = uiChangVolt_B_last-SetEnergy_left*5/10;
+1358   8                    }
+1359   7                  }else{
+1360   7                    if( SetFrequency>=5 && SetFrequency<=12 ){
+1361   8                        if(ucChoiceABlight==ALight){
+1362   9                          uiChangVolt_A = uiChangVolt_A_last-SetEnergy_left;                
+1363   9                        }else if(ucChoiceABlight==BLight){
+1364   9                          uiChangVolt_B = uiChangVolt_B_last-SetEnergy_left;
+1365   9                        }
+1366   8                    }else if ( SetFrequency>=14 && SetFrequency<=60 ){
+1367   8                      uiChangVolt_A = uiChangVolt_A_last-SetEnergy_left;
+1368   8                      uiChangVolt_B = uiChangVolt_B_last-SetEnergy_left;
+1369   8                    }
+1370   7                  
+1371   7                  }
+1372   6                }
+1373   5      
+1374   5                if(SetFrequency==40&&SetEnergy_left>10)
+1375   5                {
+1376   6                  Tiaojie_A =0;
+1377   6                  Tiaojie_B =0;
+1378   6                }
+1379   5              }
+1380   4      
+1381   4      
+1382   4              if( double_pluse_flag )
+1383   4              {
+1384   5                if( SetFrequency>=3 && SetFrequency<6 ){
+1385   6                if(ucChoiceABlight==ALight){
+1386   7                fnDischangVolt_OutPut_uiA(uiChangVolt_A);
+1387   7                CA = 1;
+1388   7                CB = 0;
+1389   7                Select_Laser=ALight;
+1390   7                }else if(ucChoiceABlight==BLight){
+1391   7                fnDischangVolt_OutPut_uiB(uiChangVolt_B);
+1392   7                CA = 0;
+1393   7                CB = 1;
+1394   7                Select_Laser=BLight;
+1395   7                  }
+1396   6                }else if ( SetFrequency>=6 && SetFrequency<=30 ){
+1397   6                
+1398   6              /*¸ßÆµ·ÅµçÃ¿´Î¶¼´ÓÍ¨¹âÎ»ÖÃ¿ªÊ¼£¬¼´A  ÏÈ·Åµç*/
+1399   6                CA = 1;
+1400   6                  CB = 0;
+1401   6                Select_Laser=ALight;
+1402   6                fnDischangVolt_OutPut_uiA( uiChangVolt_A );
+1403   6                fnDischangVolt_OutPut_uiB( uiChangVolt_B );
+1404   6                }
+1405   5              
+1406   5              }
+1407   4              else
+1408   4              {
+1409   5                if( SetFrequency>=5 && SetFrequency<=12 ){
+1410   6                  if(ucChoiceABlight==ALight){
+1411   7                  fnDischangVolt_OutPut_uiA(uiChangVolt_A);
+1412   7                  CA = 1;
+1413   7                  CB = 0;
+1414   7                  Select_Laser=ALight;
+1415   7                    }else if(ucChoiceABlight==BLight){
+1416   7                  fnDischangVolt_OutPut_uiB(uiChangVolt_B);
+1417   7                  CA = 0;
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 24  
+
+1418   7                  CB = 1;
+1419   7                  Select_Laser=BLight;
+1420   7                    }
+1421   6                }else if ( SetFrequency>=14 && SetFrequency<=60 ){
+1422   6                  
+1423   6                /*¸ßÆµ·ÅµçÃ¿´Î¶¼´ÓÍ¨¹âÎ»ÖÃ¿ªÊ¼£¬¼´A  ÏÈ·Åµç*/
+1424   6                  CA = 1;
+1425   6                    CB = 0;
+1426   6                  Select_Laser=ALight;
+1427   6                  fnDischangVolt_OutPut_uiA( uiChangVolt_A );
+1428   6                  fnDischangVolt_OutPut_uiB( uiChangVolt_B );
+1429   6                }
+1430   5              }
+1431   4      
+1432   4      
+1433   4                //ÏÔÊ¾ÕÒµ½µÄµçÑ¹
+1434   4                if (Flag_ShowFeedBack==Show_Enable)
+1435   4                {           
+1436   5                  LCD_A_ChargeVolt(uiChangVolt_A);
+1437   5                  LCD_B_ChargeVolt(uiChangVolt_B);
+1438   5                }
+1439   4      
+1440   4      
+1441   4                  ucDischangingDianJi_T2overflows = 0x00;
+1442   4                /*½ûÖ¹µç»ú¼ì²â¹¦ÄÜ*/
+1443   4                biTestDianji = notTestDianji;
+1444   4      
+1445   4                CCDFD=1;  //ÔÊÐí³äµçµçÔ´¹¤×÷
+1446   4                PULSE = 0;
+1447   4                //Æô¶¯±ßÑØ²¶»ñ·Åµç
+1448   4                biChoiceT2Fun = T2Fun1;
+1449   4                capture = T2SpringDischarge_DingWei;
+1450   4                T2CON = 0x09;/*²¶»ñ*/
+1451   4                ET2 = 1;
+1452   4                TR2 = 1;
+1453   4                EXF2 = 0;   //ºÜÖØÒªµÄÇå³ý±ßÑØÖÐ¶Ï±êÖ¾Î»
+1454   4                TF2 = 0;
+1455   4      
+1456   4                JT_L_R=Left;
+1457   4                /*±êÖ¾Á¿ÉèÖÃ²ÎÊýÎªÎ´¸Ä±ä*/
+1458   4                FlagPara = paraunchang;
+1459   4                FlagEnergy_L = unChangEnergy;
+1460   4                FSFMQ = 0;
+1461   4            }
+1462   3            else if ( SJTA1==1)
+1463   3            {
+1464   4              /*LCD[ÖÎÁÆÖÐ----]*/
+1465   4              LCD_Curing( );
+1466   4              show_fashe_right();
+1467   4              SetEnergy_jishu = SetEnergy_right;
+1468   4              /*ÉèÖÃµ±Ç°Îª³ä·Åµç×´Ì¬*/
+1469   4              biDischanging = Dischanging_Yes;                
+1470   4              /*Âö³å¼ÆÊýÇåÁã*/
+1471   4              CurPulse = 0;
+1472   4              /*³¬²î-50%¡¢³äµçµçÑ¹³¬1000V£¬¼Æ´ÎÇåÁã*/
+1473   4              Count_F50V1000 = 0;
+1474   4              Pulse_time=Pulse_time_right;
+1475   4              if( double_pluse_flag==0&&long_short_pluse_flag==1 ) //µ¥Âö³å ³¤Âö³å
+1476   4              {
+1477   5      //          if(SetFrequency==20&&SetEnergy_right>40)
+1478   5      //          {
+1479   5      //            Pulse_time=13;
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 25  
+
+1480   5      //          }
+1481   5      // //           if(SetFrequency==24&&SetEnergy_right>35)
+1482   5      // //           {
+1483   5      // //             Pulse_time=12;
+1484   5      // //           }
+1485   5      //                          
+1486   5      //          if(SetFrequency==40&&SetEnergy_right>15)
+1487   5      //          {
+1488   5      //            Pulse_time=11;
+1489   5      //          }
+1490   5              }
+1491   4      
+1492   4              //ÏÔÊ¾¹¦ÂÊ»òÄÜÁ¿·´À¡ÇúÏß²Î¿¼Öµ
+1493   4              if (FlagEnergy_R!=unChangEnergy)
+1494   4              {         
+1495   5                Power_FeedBack(SetEnergy_right);  //ÏÔÊ¾¹¦ÂÊ»òÄÜÁ¿·´À¡ÇúÏß²Î¿¼Öµ
+1496   5                Ener_Sright_A=Ener_SA_temp;
+1497   5                Ener_Sright_B=Ener_SB_temp;
+1498   5      
+1499   5                if (Flag_ShowFeedBack==Show_Enable)
+1500   5                {   
+1501   6                  Display_FeedBackEnergyVolt_right( Ener_Sright_A*10,  Ener_Sright_B*10);
+1502   6                }
+1503   5      
+1504   5                if( double_pluse_flag)
+1505   5                  {
+1506   6                    /*±£´æÉèÖÃÄÜÁ¿Öµ*/
+1507   6                    saveshuzu[0]=SetEnergy_right;
+1508   6                    SetEnergy_right_double=SetEnergy_right;
+1509   6                    write_data(0xa0,AddressEner_right_double,saveshuzu,1);
+1510   6                    Delay( 1000 );  
+1511   6                
+1512   6                  }
+1513   5                  else
+1514   5                  {
+1515   6                    /*±£´æÉèÖÃÄÜÁ¿Öµ*/
+1516   6                    saveshuzu[0]=SetEnergy_right;
+1517   6                    SetEnergy_right_only=SetEnergy_right;
+1518   6                    write_data(0xa0,AddressEner_right,saveshuzu,1);
+1519   6                    Delay( 1000 );
+1520   6                            
+1521   6                  }
+1522   5                  
+1523   5              }
+1524   4              //Èç¹û×¼±¸×´Ì¬ÏÂÄÜÁ¿½µµÍ£¬ÔòÐ¹·ÅµçÈÝ¿âµçÑ¹
+1525   4              if (FlagEnergy_R==decEnergy||((JT_L_R==Left)&&(SetEnergy_left>SetEnergy_right+5))){
+1526   5                for(xiefang_pulse=0;xiefang_pulse<100;xiefang_pulse++){  //·Åµç100´Î  1s
+1527   6                  PULSE = 1;
+1528   6                  Delay (25);
+1529   6                  PULSE = 0;
+1530   6                  Delay(975);
+1531   6                }
+1532   5                      
+1533   5              }
+1534   4      
+1535   4              /*³õÊ¼³äµçµçÑ¹*/
+1536   4              if (FlagEnergy_R!=unChangEnergy||FlagPara!=paraunchang||JT_L_R==Left)
+1537   4              {
+1538   5                /*Èç¹û²ÎÊý·¢Éú±ä»¯£¬Ê¹ÓÃÍ³Ò»³õÊ¼Öµ*/
+1539   5                
+1540   5                if( double_pluse_flag)
+1541   5                {
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 26  
+
+1542   6                  if(Pulse_time>6){
+1543   7                  uiChangVolt_A = Vc0+(SetEnergy_right/2-5)*3;
+1544   7                  uiChangVolt_B = Vc0+(SetEnergy_right/2-5)*3;
+1545   7                  uiChangVolt_A_MAX=550;    //¸³³õÖµ550v
+1546   7                  uiChangVolt_B_MAX=550;
+1547   7                }else{
+1548   7                  uiChangVolt_A = 600+(SetEnergy_right/2-5)*4;
+1549   7                  uiChangVolt_B = 600+(SetEnergy_right/2-5)*4;
+1550   7                  uiChangVolt_A_MAX=650;    //¸³³õÖµ550v
+1551   7                  uiChangVolt_B_MAX=650;
+1552   7                  if(uiChangVolt_A>=750)
+1553   7                      uiChangVolt_A=750;
+1554   7                  if(uiChangVolt_B>=750)
+1555   7                      uiChangVolt_B=750;
+1556   7                }
+1557   6                
+1558   6                }else
+1559   5                {
+1560   6                  if(Pulse_time>6){
+1561   7                  uiChangVolt_A = Vc0+(SetEnergy_right-5)*4;
+1562   7                  uiChangVolt_B = Vc0+(SetEnergy_right-5)*4;
+1563   7                  uiChangVolt_A_MAX=550;    //¸³³õÖµ550v
+1564   7                  uiChangVolt_B_MAX=550;
+1565   7                }else{
+1566   7                  uiChangVolt_A = 620+(SetEnergy_right-5)*7;
+1567   7                  uiChangVolt_B = 620+(SetEnergy_right-5)*7;
+1568   7                  uiChangVolt_A_MAX=650;    //¸³³õÖµ550v
+1569   7                  uiChangVolt_B_MAX=650;
+1570   7                  if(uiChangVolt_A>=750)
+1571   7                      uiChangVolt_A=750;
+1572   7                  if(uiChangVolt_B>=750)
+1573   7                      uiChangVolt_B=750;
+1574   7                }
+1575   6                }
+1576   5                
+1577   5                Ener_A_MAX=2; //·ÀÖ¹µ×Ôë²úÉúµÄ¸ÉÈÅ£¬¸³³õÖµ0.2v
+1578   5                Ener_B_MAX=2;
+1579   5                Tiaojie_A =0;
+1580   5                Tiaojie_B =0;
+1581   5                shuiwen_chuli_old=shuiwen_chuli;
+1582   5              }
+1583   4              else
+1584   4              { //²ÎÊýÎª±ä»¯£¬ÑØÓÃÉÏ´Î³äµçµçÑ¹,ÓÉÓÚÔÙ´Î²È½ÅÌ¤Ê±Ë®ÎÂÏÂ½µ¶øÊ¹µÃÇ°¼¸¸öÂö³åÄÜÁ¿¹ý¸ß£¬ËùÒÔÊÊµ±½µµÍÉÏ´Î±£´
+             -æµÄµçÑ¹Öµ
+1585   5                if( double_pluse_flag )
+1586   5                {
+1587   6                  if(SetEnergy_right<=30){ 
+1588   7                    if( SetFrequency>=3 && SetFrequency<6 ){
+1589   8                        if(ucChoiceABlight==ALight){
+1590   9                          uiChangVolt_A = uiChangVolt_A_last-SetEnergy_right*5/10;                  
+1591   9                        }else if(ucChoiceABlight==BLight){
+1592   9                          uiChangVolt_B = uiChangVolt_B_last-SetEnergy_right*5/10;
+1593   9                        }
+1594   8                    }else if ( SetFrequency>=6 && SetFrequency<=30 ){
+1595   8                      uiChangVolt_A = uiChangVolt_A_last-SetEnergy_right*5/10;
+1596   8                      uiChangVolt_B = uiChangVolt_B_last-SetEnergy_right*5/10;
+1597   8                    }
+1598   7                  }else{
+1599   7                    if( SetFrequency>=3 && SetFrequency<6 ){
+1600   8                        if(ucChoiceABlight==ALight){
+1601   9                          uiChangVolt_A = uiChangVolt_A_last-SetEnergy_right;               
+1602   9                        }else if(ucChoiceABlight==BLight){
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 27  
+
+1603   9                          uiChangVolt_B = uiChangVolt_B_last-SetEnergy_right;
+1604   9                        }
+1605   8                    }else if ( SetFrequency>=6 && SetFrequency<=30 ){
+1606   8                      uiChangVolt_A = uiChangVolt_A_last-SetEnergy_right;
+1607   8                      uiChangVolt_B = uiChangVolt_B_last-SetEnergy_right;
+1608   8                    }
+1609   7                  
+1610   7                  }
+1611   6                }else
+1612   5                {
+1613   6                  if(SetEnergy_right<=15){ 
+1614   7                    if( SetFrequency>=5 && SetFrequency<=12 ){
+1615   8                        if(ucChoiceABlight==ALight){
+1616   9                          uiChangVolt_A = uiChangVolt_A_last-SetEnergy_right*5/10;                  
+1617   9                        }else if(ucChoiceABlight==BLight){
+1618   9                          uiChangVolt_B = uiChangVolt_B_last-SetEnergy_right*5/10;
+1619   9                        }
+1620   8                    }else if ( SetFrequency>=14 && SetFrequency<=60 ){
+1621   8                      uiChangVolt_A = uiChangVolt_A_last-SetEnergy_right*5/10;
+1622   8                      uiChangVolt_B = uiChangVolt_B_last-SetEnergy_right*5/10;
+1623   8                    }
+1624   7                  }else{
+1625   7                    if( SetFrequency>=5 && SetFrequency<=12 ){
+1626   8                        if(ucChoiceABlight==ALight){
+1627   9                          uiChangVolt_A = uiChangVolt_A_last-SetEnergy_right;               
+1628   9                        }else if(ucChoiceABlight==BLight){
+1629   9                          uiChangVolt_B = uiChangVolt_B_last-SetEnergy_right;
+1630   9                        }
+1631   8                    }else if ( SetFrequency>=14 && SetFrequency<=60 ){
+1632   8                      uiChangVolt_A = uiChangVolt_A_last-SetEnergy_right;
+1633   8                      uiChangVolt_B = uiChangVolt_B_last-SetEnergy_right;
+1634   8                    }
+1635   7                  
+1636   7                  }
+1637   6                }
+1638   5                if(SetFrequency==40&&SetEnergy_right>10)
+1639   5                {
+1640   6                  Tiaojie_A =0;
+1641   6                  Tiaojie_B =0;
+1642   6                }
+1643   5                
+1644   5      
+1645   5              }
+1646   4      
+1647   4      
+1648   4              if( double_pluse_flag )
+1649   4              {
+1650   5                if( SetFrequency>=3 && SetFrequency<6 ){
+1651   6                if(ucChoiceABlight==ALight){
+1652   7                fnDischangVolt_OutPut_uiA(uiChangVolt_A);
+1653   7                CA = 1;
+1654   7                CB = 0;
+1655   7                Select_Laser=ALight;
+1656   7                }else if(ucChoiceABlight==BLight){
+1657   7                fnDischangVolt_OutPut_uiB(uiChangVolt_B);
+1658   7                CA = 0;
+1659   7                CB = 1;
+1660   7                Select_Laser=BLight;
+1661   7                  }
+1662   6                }else if ( SetFrequency>=6 && SetFrequency<=30 ){
+1663   6                
+1664   6              /*¸ßÆµ·ÅµçÃ¿´Î¶¼´ÓÍ¨¹âÎ»ÖÃ¿ªÊ¼£¬¼´A  ÏÈ·Åµç*/
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 28  
+
+1665   6                CA = 1;
+1666   6                  CB = 0;
+1667   6                Select_Laser=ALight;
+1668   6                fnDischangVolt_OutPut_uiA( uiChangVolt_A );
+1669   6                fnDischangVolt_OutPut_uiB( uiChangVolt_B );
+1670   6                }
+1671   5              
+1672   5              }
+1673   4              else
+1674   4              {
+1675   5                if( SetFrequency>=5 && SetFrequency<=12 ){
+1676   6                  if(ucChoiceABlight==ALight){
+1677   7                  fnDischangVolt_OutPut_uiA(uiChangVolt_A);
+1678   7                  CA = 1;
+1679   7                  CB = 0;
+1680   7                  Select_Laser=ALight;
+1681   7                    }else if(ucChoiceABlight==BLight){
+1682   7                  fnDischangVolt_OutPut_uiB(uiChangVolt_B);
+1683   7                  CA = 0;
+1684   7                  CB = 1;
+1685   7                  Select_Laser=BLight;
+1686   7                    }
+1687   6                }else if ( SetFrequency>=14 && SetFrequency<=60 ){
+1688   6                  
+1689   6                /*¸ßÆµ·ÅµçÃ¿´Î¶¼´ÓÍ¨¹âÎ»ÖÃ¿ªÊ¼£¬¼´A  ÏÈ·Åµç*/
+1690   6                  CA = 1;
+1691   6                    CB = 0;
+1692   6                  Select_Laser=ALight;
+1693   6                  fnDischangVolt_OutPut_uiA( uiChangVolt_A );
+1694   6                  fnDischangVolt_OutPut_uiB( uiChangVolt_B );
+1695   6                }
+1696   5              }
+1697   4      
+1698   4      
+1699   4                //ÏÔÊ¾ÕÒµ½µÄµçÑ¹
+1700   4                if (Flag_ShowFeedBack==Show_Enable)
+1701   4                {           
+1702   5                  LCD_A_ChargeVolt(uiChangVolt_A);
+1703   5                  LCD_B_ChargeVolt(uiChangVolt_B);
+1704   5                }
+1705   4      
+1706   4      
+1707   4                  ucDischangingDianJi_T2overflows = 0x00;
+1708   4                /*½ûÖ¹µç»ú¼ì²â¹¦ÄÜ*/
+1709   4                biTestDianji = notTestDianji;
+1710   4      
+1711   4                CCDFD=1;  //ÔÊÐí³äµçµçÔ´¹¤×÷
+1712   4                PULSE = 0;
+1713   4                //Æô¶¯±ßÑØ²¶»ñ·Åµç
+1714   4                biChoiceT2Fun = T2Fun1;
+1715   4                capture = T2SpringDischarge_DingWei;
+1716   4                T2CON = 0x09;/*²¶»ñ*/
+1717   4                ET2 = 1;
+1718   4                TR2 = 1;
+1719   4                EXF2 = 0;   //ºÜÖØÒªµÄÇå³ý±ßÑØÖÐ¶Ï±êÖ¾Î»
+1720   4                TF2 = 0;
+1721   4      
+1722   4                JT_L_R=Right;
+1723   4                /*±êÖ¾Á¿ÉèÖÃ²ÎÊýÎªÎ´¸Ä±ä*/
+1724   4                FlagPara = paraunchang;
+1725   4                FlagEnergy_R = unChangEnergy;
+1726   4                FSFMQ = 0;
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 29  
+
+1727   4            }
+1728   3          }
+1729   2          /*ÕýÔÚ³ä·Åµç*/
+1730   2          else if ( biDischanging==Dischanging_Yes  )
+1731   2            {
+1732   3              count1ms=count50us/20;
+1733   3              if ( count1ms>=1&&count1ms<=2)
+1734   3              {
+1735   4                
+1736   4                /*´¦Àí²ÉÑùÊý¾Ý£¬ÅÐ¶ÏÄÜÁ¿Ñ¡ÔñÏÂ¶þ´ÎµÄ³äµçµçÑ¹£¬*/
+1737   4                if(onecheck_flag==1){
+1738   5                  onecheck_flag=0;
+1739   5                  if ( CurPulse>6 ) 
+1740   5                  {
+1741   6                    fnEnergyControl_ZhunBei_first();
+1742   6                  }
+1743   5                  
+1744   5                  CNL=1;        //ÄÜÁ¿·´À¡ÇåÁã
+1745   5                    }                                                     
+1746   4                            
+1747   4              }
+1748   3              else if ( count1ms>=4&&count1ms<=5)
+1749   3              {
+1750   4                  if ( CurPulse>6 ) 
+1751   4                  {
+1752   5                    if ( fnEnergyControl_ZhunBei() )
+1753   5                    {
+1754   6                          halt( );
+1755   6                      return 1;
+1756   6                    }
+1757   5                  }
+1758   4                  CNL=1;        //ÄÜÁ¿·´À¡ÇåÁã
+1759   4                  
+1760   4                /*Ö´ÐÐ³ä·ÅµçÖÐµÄ¼ì²â*/
+1761   4                if ( Check_Dischanging_1040 () || CheckZC_dai_zhun_Discharge() )
+1762   4                {
+1763   5                  return 1;
+1764   5                }
+1765   4                      
+1766   4                if (rinterrupt==rinterrupt_Yes)
+1767   4                      {
+1768   5                        rinterrupt = rinterrupt_No;
+1769   5                      if (rbuf[8]==0x0c)               //´ý»ú¼ü
+1770   5                      {
+1771   6                        HaltLaser2DaiJi=HaltLaser2DaiJi_Enable;
+1772   6                      goto HiFre_End;
+1773   6                      }           
+1774   5                    }
+1775   4                
+1776   4                
+1777   4                ET0 = 0;
+1778   4                TR0 = 0;/*¹Ø±Õ·Åµç¼°ÄÜÁ¿·´À¡¼ÆÊ±*/
+1779   4      
+1780   4                TR2 = 1;  //¿ªÆô¶¨Ê±Æ÷2
+1781   4                ET2 = 1;
+1782   4                EXEN2=1;      //ÔÊÐíÒý½Å²¶»ñ¹¦ÄÜ  
+1783   4                EXF2 = 0;   //ºÜÖØÒªµÄÇå³ý±ßÑØÖÐ¶Ï±êÖ¾Î»
+1784   4                TF2 = 0;
+1785   4      
+1786   4                count50us=0;        //·Åµç¼ÆÊ±ÇåÁã
+1787   4                    
+1788   4                if(one_orflag==0)   //ÇÐ»»·ÅµçÇÀ
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 30  
+
+1789   4                {  
+1790   5                  if( double_pluse_flag )
+1791   5                  {
+1792   6                    if(SetFrequency>=6)        /*14-40hz ÈýÂ·¹¤×÷*/
+1793   6                    {
+1794   7                      if(Select_Laser == ALight){
+1795   8                        CA = 0;
+1796   8                        CB = 1;
+1797   8                        Select_Laser=BLight;
+1798   8                      }else if(Select_Laser == BLight){
+1799   8                        CA = 1;
+1800   8                        CB = 0;
+1801   8                        Select_Laser=ALight;
+1802   8                      }
+1803   7                    }
+1804   6                  }else{
+1805   6                    if(SetFrequency>=14)         /*14-40hz ÈýÂ·¹¤×÷*/
+1806   6                    {
+1807   7                      if(Select_Laser == ALight){
+1808   8                        CA = 0;
+1809   8                        CB = 1;
+1810   8                        Select_Laser=BLight;
+1811   8                      }else if(Select_Laser == BLight){
+1812   8                        CA = 1;
+1813   8                        CB = 0;
+1814   8                        Select_Laser=ALight;
+1815   8                      }
+1816   7                    }
+1817   6                  }             
+1818   5                  }
+1819   4              }
+1820   3              else
+1821   3              {
+1822   4                /*¸Õ¸ÕÌ§Æð½ÅÌ¤¿ª¹Ø*/
+1823   4                P4status=P4;
+1824   4                if(JT_L_R==Right)
+1825   4                {
+1826   5                  if ( SJTA1==0 )
+1827   5                  {
+1828   6                  Delay_100us();
+1829   6                  P4status=P4;
+1830   6                  if ( SJTA1==0 )
+1831   6                  {
+1832   7                    Delay_100us();
+1833   7                    P4status=P4;
+1834   7                    if ( SJTA1==0 )
+1835   7                    {
+1836   8                       goto HiFre_End;
+1837   8                    }
+1838   7                  }
+1839   6                  }
+1840   5                }
+1841   4                if(JT_L_R==Left)
+1842   4                {
+1843   5                  if ( SJTA0==0 )
+1844   5                  {
+1845   6                  Delay_100us();
+1846   6                  P4status=P4;
+1847   6                  if ( SJTA0==0 )
+1848   6                  {
+1849   7                    Delay_100us();
+1850   7                    P4status=P4;
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 31  
+
+1851   7                    if ( SJTA0==0 )
+1852   7                    {
+1853   8                      /*ÉèÖÃ±äÁ¿Í£Ö¹³ä·Åµç*/
+1854   8      HiFre_End:            PULSE = 0;
+1855   8                      CA = 1;
+1856   8                      CB = 0;
+1857   8                      CCDFD=0;  //½ûÖ¹³äµçµçÔ´¹¤×÷
+1858   8                      TR0 = 0;
+1859   8                          ET0 = 0;/*Í£Ö¹³ä·ÅµçÖÐ¶Ï*/
+1860   8                      TR2 = 0;
+1861   8                      ET2 = 0;/*Í£Ö¹³ä·ÅµçÖÐ¶Ï*/
+1862   8                      /*±êÖ¾¸´Î»*/
+1863   8                      biDischanging = Dischanging_No;
+1864   8                      /*³äµçµçÑ¹¹éÁã*/
+1865   8                      fnDischangVolt_OutPut_uiA(0);
+1866   8                      fnDischangVolt_OutPut_uiB(0);
+1867   8                      /*Æô¶¯µç»ú¹ÊÕÏ¼à²â*/
+1868   8                      fnSelectTimer2_Fun2_first();
+1869   8                      /*LCD[¼¤¹â×¼±¸·¢Éä----]*/
+1870   8                      fnShowzhunbei ();
+1871   8                      show_fashe_no();
+1872   8                      CLAMP=0;
+1873   8                      Clamp_flag=0;
+1874   8                      FSFMQ = 1;
+1875   8                      CNL=1;
+1876   8                      /*±£´æÄ©´Î³äµçµçÑ¹*/
+1877   8                      uiChangVolt_A_last = uiChangVolt_A;
+1878   8                      uiChangVolt_B_last = uiChangVolt_B;
+1879   8                  
+1880   8                      
+1881   8                      //¼ÇÂ¼±¾´ÎÊý¾Ý
+1882   8                      TotalJoule_benci+=(ulong)SetEnergy_jishu*(ulong)CurPulse;
+1883   8                      TotalJoule_benci_1 = TotalJoule_benci/10;
+1884   8                                      TotalPulse_benci+=(ulong)CurPulse;
+1885   8                      Totalminutes_benci+=(float)CurPulse/(float)SetFrequency/6;
+1886   8                      //³¤Ê±¼ä¿ª»ú£¬²»Í£»úµÄÇé¿öÏÂÅÐ¶ÏÏÂÊÇ·ñ³¬ÏÞ
+1887   8                      if(TotalJoule_benci_1>=9999999)
+1888   8                        TotalJoule_benci_1=9999999;
+1889   8                      if(TotalPulse_benci>=9999999)
+1890   8                        TotalPulse_benci=9999999;
+1891   8                      if(Totalminutes_benci>=9999)
+1892   8                        Totalminutes_benci=9999;
+1893   8                      
+1894   8      
+1895   8                      
+1896   8                        //´ò¹âÀÛ¼Æ³¬¹ý18S
+1897   8                      if (MB_SGX==Check_Enable)   //Ð´ÉäÆµ¿¨´ÎÊý
+1898   8                      {
+1899   9          //              GX_write();
+1900   9                      }
+1901   8                      
+1902   8                      if(Totalminutes_benci>=5&&baoyang_jishu_flag==0){  //30s
+1903   9                        baoyang_jishu_flag=1;
+1904   9                        baoyang_jishu++;
+1905   9                        saveshuzu[0]=baoyang_jishu/256;
+1906   9                        write_data(0xa0,Address_baoyang_jishu,saveshuzu,1);
+1907   9                        Delay( 1000 );
+1908   9                        saveshuzu[0]=baoyang_jishu%256;
+1909   9                        write_data(0xa0,Address_baoyang_jishu+1,saveshuzu,1);
+1910   9                        Delay( 1000 );
+1911   9                      }
+1912   8                      
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 32  
+
+1913   8      
+1914   8                      //´æ´¢±¾´ÎÊý¾Ý
+1915   8                      work_info_write[0]=TotalPulse_benci/65536;
+1916   8                      work_info_write[1]=TotalPulse_benci%65536/256;
+1917   8                      work_info_write[2]=TotalPulse_benci%256;
+1918   8                      
+1919   8                      work_info_write[3]=TotalJoule_benci_1/65536;
+1920   8                      work_info_write[4]=TotalJoule_benci_1%65536/256;
+1921   8                      work_info_write[5]=TotalJoule_benci_1%256;
+1922   8                      
+1923   8                      work_info_write[6]=(uint)Totalminutes_benci/256;
+1924   8                      work_info_write[7]=(uint)Totalminutes_benci%256;
+1925   8      
+1926   8                      write_data(0xa0,work_info_weizhi+6,work_info_write,8);    
+1927   8                      Delay( 500 );
+1928   8      
+1929   8                            
+1930   8      
+1931   8                      if (HaltLaser2DaiJi==HaltLaser2DaiJi_Enable)
+1932   8                      {
+1933   9                        HaltLaser2DaiJi=HaltLaser2DaiJi_Disable;
+1934   9                      
+1935   9                        show_daiji_qiehuan();
+1936   9      //                  Alarm (sound2);
+1937   9                        return 1;/*ÍË³ö×¼±¸×´Ì¬£¬·µ»Ø´ý»ú×´Ì¬(ÒÑ¾­ÕÒµ½SVOL)*/
+1938   9                      }
+1939   8                      
+1940   8      
+1941   8                      if (Flag_ShowFeedBack==Show_Enable)
+1942   8                      {
+1943   9                        //1ÏÔÊ¾ÕÒµ½µÄµçÑ¹
+1944   9                        
+1945   9                        LCD_A_ChargeVolt(uiChangVolt_A);
+1946   9                        LCD_B_ChargeVolt(uiChangVolt_B);
+1947   9                        
+1948   9                      }
+1949   8      
+1950   8                    }
+1951   7                  }
+1952   6                }
+1953   5                }
+1954   4              }
+1955   3            }
+1956   2          
+1957   2        }
+1958   1      }
+1959          
+1960          
+1961          /*timecount++;//50us¼ÓÒ»£¬tf0Òç³ö20´ÎÎª1ms£»counterµ¥Î»ÊÇms£¬µç»úÖÜÆÚµÄ4·ÖÖ®Ò»Ê±¼ä£S;count1msÊµ¼ÊÉÏÊÇ50us¼
+             -Ó1£¬´Ó·ÅµçË²¼ä¿ªÊ¼¼Ó*/
+1962          void T0_int (void) interrupt 1
+1963          {
+1964   1          TR0=0;
+1965   1          TL0 = (65536-92)%256;     //ÏµÍ³Ê±ÖÓ12·ÖÆµ ×÷Îª¶¨Ê±Æ÷2Ê±ÖÓÔ´             
+1966   1          TH0 = (65536-92)/256;     //¾«¶È¿ÉÒÔÂú×ã   ´Ë¶¨Ê±Îª50us£¬×¼È·ÊýÎª49.945us   ¾«¶È1%
+1967   1          TR0=1;
+1968   1        
+1969   1          count50us++;
+1970   1          if( double_pluse_flag )  //Ë«Âö³åÄ£Ê½
+1971   1          {
+1972   2            if(Pulse_time_flag==1&&count50us==Pulse_time) {   //µÚÒ»¸öÂö³åµÄ·ÅµçÑÓÊ±µÄ·ÅµçºóÑØ
+1973   3              PULSE = 0;            //·ÅµçÍ£Ö¹
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 33  
+
+1974   3              ucDischangingDianJi_T2overflows = 0x00;
+1975   3                              
+1976   3            }
+1977   2            if(Pulse_time_flag==1&&count50us==Pulse_jiange) {   //µÚ¶þ¸öÂö³åµÄ·ÅµçÑÓÊ±µÄ·ÅµçÇ°ÑØ
+1978   3              CNL=0; 
+1979   3              PULSE = 1;            //·Åµç¿ªÊ¼                      
+1980   3            } 
+1981   2            if(Pulse_time_flag==1&&count50us==(Pulse_time2+Pulse_jiange)) {   //µÚ¶þ¸öÂö³åµÄ·ÅµçÑÓÊ±µÄ·ÅµçºóÑØ
+1982   3              PULSE = 0;            //·ÅµçÍ£Ö¹
+1983   3              Pulse_time_flag=0;        //Çå³ý·Åµç±êÖ¾
+1984   3              TotalPulse_U++;/*12us*/
+1985   3                CurPulse++;/*6us*/
+1986   3              ucDischangingDianJi_T2overflows = 0x00;
+1987   3                              
+1988   3            } 
+1989   2          }else{   //µ¥Âö³åÄ£Ê½
+1990   2            if(Pulse_time_flag==1&&count50us==Pulse_time) {   //µÚÒ»¸öÂö³åµÄ·ÅµçÑÓÊ±µÄ·ÅµçºóÑØ
+1991   3              PULSE = 0;            //·ÅµçÍ£Ö¹
+1992   3              Pulse_time_flag=0;        //Çå³ý·Åµç±êÖ¾
+1993   3              TotalPulse_U++;/*12us*/
+1994   3                CurPulse++;/*6us*/
+1995   3              ucDischangingDianJi_T2overflows = 0x00;
+1996   3                              
+1997   3            }
+1998   2          }
+1999   1      
+2000   1      }
+2001          
+2002          /*TF2Òç³öÊ±¼äÎª0.03555556s£¬T2×ßÒ»²½Ê±¼äÎª0.542us£¬5hz-20hzµç»úÖÜÆÚÎª200--50ms*/
+2003          void T2_int (void) interrupt 5
+2004          {
+2005   1      
+2006   1      
+2007   1        if ( biChoiceT2Fun==T2Fun1 )
+2008   1        {
+2009   2          if (capture==T2MeasureSpeed)
+2010   2          {
+2011   3            if ( TF2==1 )/*Timer2  OverFlow65536*12/22118400=0.035555s*/
+2012   3            {
+2013   4              nb_overflows++;/*Òç³ö¼ÆÊýÔö1£¬
+2014   4              */
+2015   4            }
+2016   3            if ( EXF2==1 )/*P1.1  ²úÉú¸ºÌø±ä*/
+2017   3            {
+2018   4               ucSamples++;/*²ÉÑù¼ÆÊýÔö1*/
+2019   4               nb_overflows_old +=nb_overflows;/*±£´æÒç³ö¼ÆÊý*/
+2020   4               nb_overflows=0x0000;/*Çå³ýÒç³ö¼ÆÊý*/
+2021   4               
+2022   4               if(ucSamples==1){
+2023   5                nb_overflows_old=0;      
+2024   5                RCAP2_old = RCAP2H;
+2025   5                RCAP2_old=(RCAP2_old<<8)&0xFF00;
+2026   5                RCAP2_old |= RCAP2L;
+2027   5               }else if(ucSamples==7){
+2028   5                EXEN2=0;          
+2029   5               }
+2030   4            }
+2031   3            EXF2=0;/*Çå³ýTimer2  Íâ²¿ÊÂ¼þ±êÖ¾*/
+2032   3            TF2 = 0;/*Çå³ýTimer2  Òç³ö±êÖ¾*/
+2033   3          }
+2034   2          else if(capture==T2SpringDischarge_DingWei)
+2035   2          {
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 34  
+
+2036   3            if ( EXF2==1)/*P1.1  ²úÉú¸ºÌø±ä*/
+2037   3            {
+2038   4              CNL=0;                //ÄÜÁ¿·´À¡´ò¿ªÓÐÐ§
+2039   4              count50us=0;        //·Åµç¼ÆÊ±ÇåÁã
+2040   4              onecheck_flag=1;      //·´À¡Ö»²É¼¯Ò»´Î±êÖ¾
+2041   4              Pulse_time_flag=1;      //·Åµç±êÖ¾
+2042   4              TL0 = (65536-92)%256;     //ÏµÍ³Ê±ÖÓ12·ÖÆµ ×÷Îª¶¨Ê±Æ÷0Ê±ÖÓÔ´             
+2043   4              TH0 = (65536-92)/256;     //¾«¶È¿ÉÒÔÂú×ã   ´Ë¶¨Ê±Îª50us£¬×¼È·ÊýÎª49.945us   ¾«¶È1%
+2044   4      //        if(Select_Laser==ALight){                      
+2045   4      //          adstart(1);  //aÂ·µçÑ¹¼ì²â   
+2046   4      //          }else if(Select_Laser == BLight){
+2047   4      //          adstart(2);  //bÂ·µçÑ¹¼ì²â 
+2048   4      //        }
+2049   4      //      Delay(200);       //5msÑÓÊ±
+2050   4              PULSE=1;    //·ÅµçÇ°ÑØ
+2051   4              ET0 = 1;
+2052   4              TR0 = 1;/*Æô¶¯·ÅµçÑÓÊ±*/
+2053   4      
+2054   4              TR2 = 0;  //¹Ø±Õ¶¨Ê±Æ÷2£¬·ÀÖ¹¸ÉÈÅÔÙ´Î´¥·¢·Åµç
+2055   4              ET2 = 0;                    
+2056   4              EXEN2=0;      //½ûÖ¹Òý½Å²¶»ñ¹¦ÄÜ  
+2057   4              Clamp_flag=1;
+2058   4      
+2059   4              
+2060   4            }
+2061   3            if ( TF2==1 )/*Timer2  OverFlow*/
+2062   3            {
+2063   4              ucDischangingDianJi_T2overflows++;
+2064   4            }
+2065   3            EXF2 = 0;
+2066   3            TF2 = 0;
+2067   3          }
+2068   2        }
+2069   1        else                    //µç»ú¹ÊÕÏ¼ì²â
+2070   1        {
+2071   2          if ( TF2==1 )/*Timer2  OverFlow:0.0355555s*/
+2072   2          {
+2073   3            uiT2OverFlows++;
+2074   3          }
+2075   2          if ( EXF2==1 )/*P1.1  ²úÉú¸ºÌø±ä*/
+2076   2          {
+2077   3            uiT2OverFlows = 0x00;
+2078   3          }
+2079   2          EXF2=0;/*Çå³ýTimer2  Íâ²¿ÊÂ¼þ±êÖ¾*/
+2080   2          TF2 = 0;/*Çå³ýTimer2  Òç³ö±êÖ¾*/
+2081   2        }
+2082   1      }
+2083          
+2084          
+2085          void T3_int (void) interrupt 14
+2086          {
+2087   1        TMR3CN   &= 0x7F;
+2088   1        am2302_timeflg++;
+2089   1        if(am2302_timeflg>=50){
+2090   2           am2302_timeflg=0;
+2091   2         am2302flg=1;
+2092   2         if(fls_flag){
+2093   3          if(LD_flg){
+2094   4            Pwm_LD(0);
+2095   4            LD_flg=0;
+2096   4          }else{
+2097   4            Pwm_LD(pwm_ld_data);
+C51 COMPILER V9.60.0.0   MAIN                                                              09/30/2026 09:26:27 PAGE 35  
+
+2098   4            LD_flg=1;
+2099   4          }
+2100   3        }
+2101   2         
+2102   2        }
+2103   1        if(Clamp_flag){
+2104   2         CLAMP=1;
+2105   2         Clamp_flag=0;
+2106   2      
+2107   2        }else{
+2108   2         CLAMP=0;
+2109   2        }
+2110   1      
+2111   1      }
+2112          
+2113          
+2114          
+2115          
+2116          
+2117          
+2118          
+2119          
+2120          
+2121          
+2122          
+2123          
+2124          
+2125          
+2126          
+2127          
+2128          
+2129          
+2130          
+2131          
+2132          
+2133          
+2134          
+2135          
+2136          
+2137          
+2138          
+2139          
+2140          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   9973    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    242       9
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4    ----
+   IDATA SIZE       =     12    ----
+   BIT SIZE         =     34       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

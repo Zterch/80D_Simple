@@ -1,0 +1,310 @@
+
+
+#define uchar unsigned char 
+#define uint  unsigned int 
+#define ulong unsigned long
+#define bool bit
+
+#define rinterrupt_Yes 0xFF
+#define rinterrupt_No 0x00
+
+extern uchar idata rinterrupt; 
+extern uchar idata rbuf[8];
+
+/*充放电中断选择标志*/
+extern uchar idata indicator;/*	1--正常出光、0--预热或正常出光不检测、5 --待机寻找电压，校准打激光*/
+extern uint idata counter;/*频率计数基准*/
+extern uint idata timecount;/*与counter  相等时，执行充放电程序，然后清零*/
+extern uint idata count1ms;/*用于定时器0  中断程序中非放电状态*/
+extern uchar idata times;/*用于限定预热时间，每放出一个脉冲加1*/
+extern uint idata CurPulse;/*当前发出的脉冲数，每一轮都重新计数*/
+extern bit onecheck_flag;
+
+
+extern uchar bdata P6status;
+extern uchar bdata P5status;
+extern uchar bdata P4status;
+
+//系统检测信号，共21  个  
+
+extern bit STG;
+extern bit STY;
+extern bit SWGZ0;
+extern bit SWGZ;
+extern bit SZGZ0_B;
+extern bit SZGZ_B;
+extern bit SZGZ0_A;
+extern bit SZGZ_A;
+
+extern bit SDY_A;
+extern bit SDY_B;
+extern bit SYR_A;
+extern bit SYR_B;
+extern bit SGX;
+extern bit SGX_DO;
+extern bit SLQSL_A;
+extern bit SLQSL_B;
+
+extern bit SJT2;
+extern bit SJT1;
+extern bit SLS;
+extern bit SYM;
+extern bit SLC;	
+
+#define Address_ucMaskByte 8066
+extern uchar bdata ucMaskByte;
+extern bit MB_SLQSL_AB;/*水流AB*/
+extern bit MB_SYM;/*水位*/
+extern bit MB_ST_YC;/*水温预警,超高*/
+extern bit MB_SYR_AB;/*预燃AB*/
+extern bit MB_SDY_AB;/*电源AB*/
+extern bit MB_SGZ_ABW;/*三个光闸*/
+extern bit MB_SLS;/*门联锁*/
+extern bit MB_SGX;/*光纤*/
+
+
+
+extern uchar ucChoiceABlight;/*0--A light		1--B light*//*通过读取AT24C16  附值*/
+#define ALight 0x00/*通光位置*/
+#define BLight 0x01/*不通光位置*/
+#define Address_ucChoiceABlight 7654
+
+/*显示反馈电压*/
+#define Show_Enable 1
+#define Show_Disable 0
+#define Address_ShowFeedBackVoltage 8065 
+#define ShowFeedBack Show_Disable
+extern bit Flag_ShowFeedBack;
+
+
+#define TPSHOWx10 10/*总脉冲数乘以10  显示*/
+extern ulong TotalPulse_U;/*总能量，周期ms*/
+#define Address_TP_U_HH 7638
+#define Address_TP_U_HL 7639
+#define Address_TP_U_LH 7640
+#define Address_TP_U_LL 7641
+
+#define TP_U_AutoClear 99990
+
+#define TJSHOWx1000 10000/*总能量值为千焦耳显示*/
+extern ulong TotalJoule_U;
+extern ulong TotalJoule1_U;
+#define Address_TJ_U_HH 7646
+#define Address_TJ_U_HL 7647
+#define Address_TJ_U_LH 7648
+#define Address_TJ_U_LL 7649
+
+#define LimitFrequency 14
+
+extern uchar SetFrequency;
+#define AddressFreq 7636	/*频率存储地址*/
+extern uchar MAXSetFrequency;/*频率实验上限*/
+//uchar MINSetFrequency;/*频率实验下限*/
+#define maxFreq 40
+#define minFreq 5
+
+extern uchar SetEnergy;
+#define AddressEner 7637	/*能量存储地址*/
+extern uchar MAXSetEnergy;/*能量实验上限*/
+//uchar MINSetEnergy;/*能量实验下限*/
+#define maxEner 42
+#define minEner 5
+
+#define EnerStep05 5
+#define EnerStep13 13
+#define EnerStep21 21
+#define EnerStep29 29
+#define EnerStep37 37
+
+extern uint Power;
+/*增加功率显示常量，限制平均功率显示上限*/
+#define maxShowPower 900
+/*各个频率下最高可设置能量*/
+extern uchar maxLimitSetEnergy_Ho;
+/*用于显示能量*/
+extern uchar SetEnergy_temp;
+
+extern bit gzall_flag;
+extern bit gza_flag; 
+extern bit gzb_flag; 
+extern bit gzw_flag; 
+extern bit yr_flag;
+extern bit onf_flag; 
+extern bit fls_flag;
+extern bit adc0_flag;
+
+#define WeiTingZhuan 0
+#define YiTingZhuan 1
+extern bit biWhetherHalt;/*0--未停转		1--已停转*/
+
+#define TestDianji 1
+#define notTestDianji 0
+extern bit biTestDianji;
+
+#define Dischang_A 0
+#define Dischang_B 1
+extern bit biDischang_AB;
+
+extern uint uiChangVolt_A;
+extern uint uiChangVolt_A_daiji;
+extern uint uiChangVolt_B;
+extern uint uiChangVolt_B_daiji;
+extern uint uiChangVolt_AB_12B;
+extern uint uiChangVolt_AB_16K;
+
+/*以下是故障信号状态位，一般不修改*/
+#define SLQSL_expedite 1/*水流通畅状态*/
+#define SLQSL_obstruct 0/*水流阻塞状态*/
+#define SDY_ok 0/*水流通畅状态*/
+#define SDY_error 1/*水流阻塞状态*/
+#define SYR_keep 1/*预燃维持中*/
+#define SYR_cancel 0/*预燃已撤销*/
+#define SYM_low 0/*水位低*/
+#define SYM_high 1/*水位高*/
+#define SLS_open 0/*门开*/
+#define SLS_close 1/*门关*/
+#define SGX_inserted 1/*光纤插入*/
+#define SGX_renegade 0/*光纤未插入*/
+
+#define Address_StartupDriveVolt 7634/*电机启动电压基址*/
+#define max_uiStartupDriveVolt 550
+#define min_uiStartupDriveVolt 450
+
+#define FrequencyError 0.03 /*调整范围0.01~0.1*/
+#define ControlError_DaiJi 0.08 /*可调范围0.05~0.09*/
+#define ControlError_ZhunBei 0.03 /*可调范围0.05~0.09*/
+
+#define ShiyongDAIJIVolt 1/*开环后使用较小电压*/
+#define ShiyongLASTVolt 0 /*开环后使用较高电压*/
+/*能量超差后选择电压*/
+#define ChaoChaChoiceVolt ShiyongLASTVolt
+
+extern uint oneEnergy;/*能量采样值*/
+
+#define DianJiErrorTimes 10
+extern uchar ucDianJiErrorTimes; 
+
+#define SDVDefault 500/*启动步进电机默认值1.0V*/
+
+#define KEVLimited 50/*开机能量检测0.xxV 限制*/
+
+extern float Ener_S;/*设置能量*/
+extern uint idata uiEner_S;
+extern uchar ucDischangingDianJi_T2overflows;
+
+//语音地址，共8  条
+#define sound7 0x00 /*按键有效*/					/*0x00,  0*/
+#define sound3 0x02 /*提示音*/					/*0x20,  32*/
+#define sound2 0x03 /*恢复工作/进行下一步*//*0x30,  48*/
+
+#define sound5 0x01 /*按键无效*/					/*0x10,  16*/
+#define sound1 0x04 /*故障音*/					/*0x40,  64*/
+#define sound4 0x06 /*保留*/						/*0x60,  96*/
+#define sound6 0x05 /*保留*/						/*0x50,  80*/
+#define sound8 0x07 /*保留*/						/*0x70,  112*/
+
+#define Flag_ZhengChang 1
+#define Flag_JiaoZhun 0
+extern bit Flag_Flow;
+
+/*00H--使用程序中目标值，01H--使用外存中目标值*/
+#define UseSoft 0x00
+#define UseRom 0x01
+
+#define Address_ChoiceEnergyVoltage 7800
+#define Address_BaseEnergyVoltage_08Hz 7801
+#define Address_BaseEnergyVoltage_10Hz 7867
+#define Address_BaseEnergyVoltage_24Hz 7933
+#define Address_BaseEnergyVoltage_99Hz 7999
+
+/*待机状态是否找到SVOL标志*/
+#define finding 0
+#define found 1
+extern bit SVOL_OK;/*0--没有找到SVOL  、1--已经找到SVOL*/
+
+#define Dischanging_Yes 1
+#define Dischanging_No 0
+extern bit biDischanging;
+
+#define FrequencyError 0.03 /*调整范围0.01~0.1*/
+#define ControlError_DaiJi 0.08 /*可调范围0.05~0.09*/
+#define ControlError_ZhunBei 0.03 /*可调范围0.05~0.09*/
+
+#define ClosedLoop 1
+#define OpenLoop 0
+extern bit biFlag_AllControlLoop;
+extern bit biFlag_LocalControlLoop;
+
+#define Check_Enable 1
+#define Check_Disable 0
+
+#define ShiyongDAIJIVolt 1/*开环后使用较小电压*/
+#define ShiyongLASTVolt 0 /*开环后使用较高电压*/
+/*能量超差后选择电压*/
+#define ChaoChaChoiceVolt ShiyongLASTVolt
+
+#define GZ_Open 1/*控制光闸开*/
+#define GZ_Close 0/*控制光闸关*/
+//#define S_GZ_Open 1/*光闸状态开*/
+//#define S_GZ_Close 0/*光闸状态关*/
+
+#define Address_DriveVolt_ShiJi 7560/*电机驱动电压基址*/
+#define max_uiDriveVolt 2200
+#define min_uiDriveVolt 400
+#define maxDA5618_12bit 2400
+
+#define FirstSheCan 0x00/*第一次设参，或从别的状态返回设参状态*/
+#define notFirstSheCan 0x01/*不是第一次设参*/
+extern uchar ucFirstSheCan;/*如果是第一次设参，则调整电压*/
+
+#define TestDianji 1
+#define notTestDianji 0
+extern bit biTestDianji;
+
+/*定时器2  的变量，编译预处理*/
+#define T2Fun1 0 /*测速，定位，触发放电*/
+#define T2Fun2 1 /*电机是否故障*/
+extern bit biChoiceT2Fun;
+
+#define T2MeasureSpeed 1
+#define T2SpringDischarge_DingWei 0
+extern bit capture;
+
+extern uint nb_overflows;/*number of overflow*/
+extern uint nb_overflows_old;/*previous number of overflow*/
+
+#define StartSample 0/*这两个标志的值是一样的*/
+#define EndSample 0
+extern uchar ucSamples;
+
+extern uint RCAP2_old;/*previous 16 bits capture value*/
+extern uint RCAP2;/*16 bits capture value*/
+
+#define DingWei 0
+#define FangDian 1
+extern bit biChoiceDingWei_FangDian;/*0--定位		1--放电*/
+extern bit enable_fangdian;
+
+extern uchar uiT2OverFlows;/*Timer2第二功能使用*/
+
+#define WeiTingZhuan 0
+#define YiTingZhuan 1
+extern bit biWhetherHalt;/*0--未停转		1--已停转*/
+
+#define ABupdown 0x00
+#define Adown 0x01
+#define Bup 0x02
+
+extern uint ulgPeriodsCount;/*全局变量，用于存储周期计数值，计算放电延时*/
+extern uint  uigDischangSpringDelay;/*全局变量，1--存储放电触发延时2--存放频率计数基准*/
+
+extern uchar idata saveshuzu[1];
+extern uchar idata qushuzu[1];
+
+
+
+
+
+
+
+

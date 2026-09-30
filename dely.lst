@@ -1,0 +1,98 @@
+C51 COMPILER V9.60.0.0   DELY                                                              09/30/2026 09:26:26 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DELY
+OBJECT MODULE PLACED IN dely.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\dely.C LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXTEND
+                    - PRINT(.\dely.lst) TABS(2) OBJECT(dely.obj)
+
+line level    source
+
+   1          
+   2          
+   3           #include "include\includes.h"
+   4          
+   5          
+   6          
+   7          
+   8          /*延时子程序*/
+   9          #if 1
+  10          /*增加各种延时函数，如，1秒，2秒。。。*/
+  11          /*可以在延时返回时加入喂狗函数，使其它函数比较易读。*/
+  12          void Delay (  uint delaycounter )
+  13          {
+  14   1          uint xdata i,j;
+  15   1          for(i=0;i<delaycounter;i++){    //延时10us,实测
+  16   2          j++;
+  17   2          j++;
+  18   2          j++;
+  19   2          j++;
+  20   2          j++;
+  21   2          j++;
+  22   2          j++;
+  23   2          j++;
+  24   2          j++;
+  25   2          j++;
+  26   2          j++;
+  27   2          j++;
+  28   2          j++;
+  29   2          j++;
+  30   2          j++;
+  31   2          j++;
+  32   2          j++;
+  33   2          j++;
+  34   2        }   
+  35   1      }   
+  36          
+  37          void Delay_100us(){
+  38   1        Delay (10);
+  39   1      }
+  40          
+  41          void Delay_1s ( void )
+  42          {
+  43   1        Delay (50000);
+  44   1        Delay (50000);
+  45   1        
+  46   1        return;
+  47   1      }
+  48          
+  49          void Delay_5s ( void )
+  50          {
+  51   1        Delay_1s();
+  52   1        Delay_1s();
+  53   1        Delay_1s();
+  54   1        Delay_1s();
+C51 COMPILER V9.60.0.0   DELY                                                              09/30/2026 09:26:26 PAGE 2   
+
+  55   1        Delay_1s();
+  56   1        return;
+  57   1      }
+  58          
+  59          
+  60          #endif
+  61          
+  62          
+  63          
+  64          
+  65          
+  66          
+  67          
+  68          
+  69          
+  70          
+  71          
+  72          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    309    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       2
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

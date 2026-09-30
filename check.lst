@@ -1,0 +1,658 @@
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE CHECK
+OBJECT MODULE PLACED IN check.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\check.C LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXTEN
+                    -D PRINT(.\check.lst) TABS(2) OBJECT(check.obj)
+
+line level    source
+
+   1          
+   2          #include "include\includes.h"
+   3          
+   4          
+   5          
+   6          /*监测子程序*/
+   7          #if 1
+   8          
+   9          void Alarm (uchar ucSoundAddress )
+  10          {
+  11   1      
+  12   1          if(ucSoundAddress){
+  13   2            CBJ = 0;
+  14   2            Delay (30000);
+  15   2            CBJ = 1;
+  16   2            Delay (20000);
+  17   2            CBJ = 0;
+  18   2            Delay (30000);
+  19   2            CBJ = 1;
+  20   2            Delay (20000);
+  21   2            CBJ = 0;
+  22   2            Delay (30000);
+  23   2            CBJ = 1;
+  24   2          }else{
+  25   2            CBJ = 1;
+  26   2          }
+  27   1        
+  28   1        return;
+  29   1      }
+  30          
+  31          
+  32          
+  33          //开机自检程序
+  34          void CheckPowerOn(void)
+  35          {
+  36   1      
+  37   1      
+  38   1        /*读取状态信号*/
+  39   1        P4status = P4;
+  40   1        P6status = P6;
+  41   1        P5status = P5;
+  42   1      
+  43   1          /*检测水温[ 常温10~30]  ST1是低温标志，ST2是高温标志*/
+  44   1        if (MB_ST_YC)
+  45   1        {
+  46   2          if (!(SDWA==0&&SGWA==1))   //水温故障，进一步判断
+  47   2          {
+  48   3            if (SGWA==0)   //水温> 35C 
+  49   3            {
+  50   4                halt();
+  51   4              LCD_WatertemDanger();
+  52   4              while (1)
+  53   4              {
+  54   5                  Alarm(sound3);
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 2   
+
+  55   5                  Delay_5s();
+  56   5              }   
+  57   4            }
+  58   3            else if (SDWA==1)  //水温<=5C
+  59   3            {
+  60   4              halt();
+  61   4              CJDQ = JDQ_Close; //压缩机断电  
+  62   4              LCD_WatertemisFalling( );
+  63   4              while (1)
+  64   4              {
+  65   5                  Alarm(sound3);
+  66   5                  Delay_5s();
+  67   5              }
+  68   4            }
+  69   3      
+  70   3            if(am2302flg){
+  71   4                am2302flg=0;
+  72   4              RH_HJ();
+  73   4                if(temperature_HJ>290&&temperature_HJ<=350){
+  74   5                 shuiwen_chuli=01;
+  75   5              }else if(temperature_HJ<=290&&temperature_HJ>230){
+  76   5                 shuiwen_chuli=03;
+  77   5              }else if(temperature_HJ<=230&&temperature_HJ>=100){
+  78   5                 shuiwen_chuli=07;
+  79   5              }
+  80   4                
+  81   4            }
+  82   3          }  
+  83   2        }
+  84   1      
+  85   1        /*检测水流量A [ 应为通      ]*/
+  86   1        /*检测水流量B [ 应为通      ]*/
+  87   1        if(MB_SLQSL_AB==Check_Enable)
+  88   1        {
+  89   2          if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+  90   2          {
+  91   3            Delay_100us();
+  92   3            P5status = P5;
+  93   3            if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+  94   3            {
+  95   4              Delay_100us();
+  96   4              P5status = P5;
+  97   4              if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+  98   4              {
+  99   5                halt();
+ 100   5                CJDQ = JDQ_Close; //压缩机断电
+ 101   5                LCD_WaterSteamError();
+ 102   5                while (1)
+ 103   5                {
+ 104   6                  Alarm(sound3);
+ 105   6                  Delay_5s();
+ 106   6                }
+ 107   5              }
+ 108   4            }
+ 109   3          }
+ 110   2        }
+ 111   1        
+ 112   1        /*检测电源A   [ 应为正常]*/
+ 113   1        /*检测电源B   [ 应为正常]*/
+ 114   1        if (MB_SDY_AB==Check_Enable)
+ 115   1        {
+ 116   2          if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 3   
+
+ 117   2          {
+ 118   3            Delay_100us();
+ 119   3            P6status=P6;
+ 120   3            if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+ 121   3            {
+ 122   4              Delay_100us();
+ 123   4              P6status=P6;
+ 124   4              if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+ 125   4              {
+ 126   5                halt();
+ 127   5                CJDQ = JDQ_Close; //压缩机断电
+ 128   5                LCD_PowerError();
+ 129   5                while (1)
+ 130   5                {
+ 131   6                  Alarm(sound3);
+ 132   6                  Delay_5s();
+ 133   6                }
+ 134   5              }
+ 135   4            }
+ 136   3          }
+ 137   2        }
+ 138   1          
+ 139   1      
+ 140   1        /*检测门锁[ 关闭    ]*/
+ 141   1        if (MB_SLS==Check_Enable)
+ 142   1        {
+ 143   2          if (SLS==SLS_open)
+ 144   2          {
+ 145   3            Delay_100us();
+ 146   3            P4status=P4;
+ 147   3            if (SLS==SLS_open)
+ 148   3            {
+ 149   4              Delay_100us();
+ 150   4              P4status=P4;
+ 151   4              if (SLS==SLS_open)
+ 152   4              {
+ 153   5                LCD_CloseDoor();
+ 154   5                    while( SLS==SLS_open )
+ 155   5                  {/*SLS=0，即门开启*/
+ 156   6                    Alarm (sound3);
+ 157   6                    Delay_1s();
+ 158   6                    P4status=P4;
+ 159   6                  }
+ 160   5                LCDzhiliaojizijian();
+ 161   5                
+ 162   5              }
+ 163   4            }
+ 164   3          }
+ 165   2        }
+ 166   1      
+ 167   1        /*检测光纤[ 插入    ]*/
+ 168   1        if (MB_SGX==Check_Enable)
+ 169   1        {
+ 170   2          if (SGX==SGX_renegade)
+ 171   2          {
+ 172   3            Delay_100us();
+ 173   3            P4status=P4;
+ 174   3            if (SGX==SGX_renegade)
+ 175   3            {
+ 176   4              Delay_100us();
+ 177   4              P4status=P4;
+ 178   4              if (SGX==SGX_renegade)
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 4   
+
+ 179   4              {
+ 180   5      
+ 181   5                LCD_InsertFiber();
+ 182   5                  while ( SGX==SGX_renegade )
+ 183   5                  {/*SGX=0，光纤故障*/
+ 184   6                    Alarm (sound3);
+ 185   6                    Delay_1s();
+ 186   6                    P4status=P4;
+ 187   6                  }
+ 188   5                LCDzhiliaojizijian();
+ 189   5      
+ 190   5              }
+ 191   4            }
+ 192   3          }
+ 193   2        }
+ 194   1        
+ 195   1          if (MB_SGX==Check_Enable)
+ 196   1        {
+ 197   2      //    check_GX_init();
+ 198   2        }
+ 199   1        
+ 200   1          /*检测脚踏[ 非踏下  ]*/
+ 201   1        if(!(SJTA0==0&&SJTA1==0))
+ 202   1        {/*若SJT1=1  并且SJT2=0的状态不成立*//*即踏下位置或者脚踏开关未连接*/
+ 203   2          LCD_CheckFeetSwitch();
+ 204   2            while(!(SJTA0==0&&SJTA1==0))
+ 205   2          {
+ 206   3            Alarm(sound3);
+ 207   3            Delay_1s();
+ 208   3            P4status=P4;
+ 209   3      
+ 210   3          }
+ 211   2          LCDzhiliaojizijian();
+ 212   2      
+ 213   2        }
+ 214   1        
+ 215   1        /*检测反馈[ <0.1v]*/
+ 216   1        CNL=1;   //将反馈电压泄放 清零
+ 217   1        oneEnergy = 0;
+ 218   1        adstart(0);   //启动ADC能量检测
+ 219   1          while(adc0_flag==0);
+ 220   1          adc0_flag=0;
+ 221   1          while ( oneEnergy>KEVLimited )
+ 222   1          {
+ 223   2            /*[LCD]系统故障3，即开机能量不为0*/
+ 224   2            SysFault(3);
+ 225   2            Alarm(sound3);
+ 226   2            Delay_1s();
+ 227   2            adstart(0);   //启动ADC能量检测
+ 228   2              while(adc0_flag==0);
+ 229   2              adc0_flag=0;
+ 230   2      
+ 231   2          }
+ 232   1        LCDzhiliaojizijian();
+ 233   1        return;
+ 234   1      }
+ 235          
+ 236          
+ 237          
+ 238          /*0--无故障 1--有可恢复故障*/
+ 239          bool CheckZC_dai_zhun_Discharge ( void )/*以后补充代码*/
+ 240          {
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 5   
+
+ 241   1        /*读取状态信号*/
+ 242   1        P4status = P4;
+ 243   1        P6status = P6;
+ 244   1        P5status = P5;
+ 245   1      
+ 246   1        /*检测水温[ 常温10~30]  ST1是低温标志，ST2是高温标志*/
+ 247   1        if (MB_ST_YC)
+ 248   1        {
+ 249   2          if (!(SDWA==0&&SGWA==1))   //水温故障，进一步判断
+ 250   2          {
+ 251   3            if (SGWA==0)   //水温> 35C 
+ 252   3            {
+ 253   4                halt();
+ 254   4              LCD_WatertemDanger();
+ 255   4              while (1)
+ 256   4              {
+ 257   5                  Alarm(sound3);
+ 258   5                  Delay_5s();
+ 259   5              }   
+ 260   4            }
+ 261   3            else if (SDWA==1)  //水温<=5C
+ 262   3            {
+ 263   4              halt();
+ 264   4              CJDQ = JDQ_Close; //压缩机断电  
+ 265   4              LCD_WatertemisFalling( );
+ 266   4              while (1)
+ 267   4              {
+ 268   5                  Alarm(sound3);
+ 269   5                  Delay_5s();
+ 270   5              }
+ 271   4            }
+ 272   3          }
+ 273   2          if ( biDischanging==Dischanging_No ){
+ 274   3      
+ 275   3            if(am2302flg){
+ 276   4                am2302flg=0;
+ 277   4              RH_HJ();
+ 278   4                if(temperature_HJ>290&&temperature_HJ<=350){
+ 279   5                 shuiwen_chuli=01;
+ 280   5              }else if(temperature_HJ<=290&&temperature_HJ>230){
+ 281   5                 shuiwen_chuli=03;
+ 282   5              }else if(temperature_HJ<=230&&temperature_HJ>=100){
+ 283   5                 shuiwen_chuli=07;
+ 284   5              }
+ 285   4                
+ 286   4            }
+ 287   3      
+ 288   3      
+ 289   3          }
+ 290   2             
+ 291   2        }
+ 292   1      
+ 293   1        /*检测水流量A [ 应为通      ]*/
+ 294   1        /*检测水流量B [ 应为通      ]*/
+ 295   1        if(MB_SLQSL_AB==Check_Enable)
+ 296   1        {
+ 297   2          if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+ 298   2          {
+ 299   3            Delay_100us();
+ 300   3            P5status = P5;
+ 301   3            if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+ 302   3            {
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 6   
+
+ 303   4              Delay_100us();
+ 304   4              P5status = P5;
+ 305   4              if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+ 306   4              {
+ 307   5                halt();
+ 308   5                CJDQ = JDQ_Close; //压缩机断电
+ 309   5                LCD_WaterSteamError();
+ 310   5                while (1)
+ 311   5                {
+ 312   6                  Alarm(sound3);
+ 313   6                  Delay_5s();
+ 314   6                }
+ 315   5              }
+ 316   4            }
+ 317   3          }
+ 318   2        }
+ 319   1        
+ 320   1        /*检测电源A   [ 应为正常]*/
+ 321   1        /*检测电源B   [ 应为正常]*/
+ 322   1        if (MB_SDY_AB==Check_Enable)
+ 323   1        {
+ 324   2          if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+ 325   2          {
+ 326   3            Delay_100us();
+ 327   3            P6status=P6;
+ 328   3            if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+ 329   3            {
+ 330   4              Delay_100us();
+ 331   4              P6status=P6;
+ 332   4              if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+ 333   4              {
+ 334   5                halt();
+ 335   5                CJDQ = JDQ_Close; //压缩机断电
+ 336   5                LCD_PowerError();
+ 337   5                while (1)
+ 338   5                {
+ 339   6                  Alarm(sound3);
+ 340   6                  Delay_5s();
+ 341   6                }
+ 342   5              }
+ 343   4            }
+ 344   3          }
+ 345   2        }
+ 346   1      
+ 347   1      
+ 348   1        /*检测门锁[ 关闭    ]*/
+ 349   1        if (MB_SLS==Check_Enable)
+ 350   1        {
+ 351   2          if (SLS==SLS_open)
+ 352   2          {
+ 353   3            Delay_100us();
+ 354   3            P4status=P4;
+ 355   3            if (SLS==SLS_open)
+ 356   3            {
+ 357   4              Delay_100us();
+ 358   4              P4status=P4;
+ 359   4              if (SLS==SLS_open)
+ 360   4              {
+ 361   5                LCD_CloseDoor();
+ 362   5                if(Status==1){
+ 363   6                    while( SLS==SLS_open )
+ 364   6                  {/*SLS=0，即门开启*/
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 7   
+
+ 365   7                    Alarm (sound3);
+ 366   7                    Delay_1s();
+ 367   7                    P4status=P4;
+ 368   7                  }
+ 369   6                  fnShowdaiji();
+ 370   6                }else if(Status==2){        //准备或发射
+ 371   6                   halt();
+ 372   6                   CJDQ = JDQ_Close; //压缩机断电
+ 373   6                   while (1)
+ 374   6                  {
+ 375   7                    Alarm(sound3);
+ 376   7                    Delay_5s();
+ 377   7                  }
+ 378   6                }       
+ 379   5      
+ 380   5                
+ 381   5              }
+ 382   4            }
+ 383   3          }
+ 384   2        }
+ 385   1      
+ 386   1        /*检测光纤[ 插入    ]*/
+ 387   1        if (MB_SGX==Check_Enable)
+ 388   1        {
+ 389   2          if (SGX==SGX_renegade)
+ 390   2          {
+ 391   3            Delay_100us();
+ 392   3            P4status=P4;
+ 393   3            if (SGX==SGX_renegade)
+ 394   3            {
+ 395   4              Delay_100us();
+ 396   4              P4status=P4;
+ 397   4              if (SGX==SGX_renegade)
+ 398   4              {
+ 399   5                
+ 400   5                LCD_InsertFiber();
+ 401   5                  if(Status==1){
+ 402   6                  while ( SGX==SGX_renegade )
+ 403   6                  {/*SGX=0，光纤故障*/
+ 404   7                    Alarm (sound3);
+ 405   7                    Delay_1s();
+ 406   7                    P4status=P4;
+ 407   7                  }
+ 408   6                  fnShowdaiji();
+ 409   6                 }else if(Status==2){       //准备或发射
+ 410   6                     halt();
+ 411   6                   CJDQ = JDQ_Close; //压缩机断电
+ 412   6                   while (1)
+ 413   6                  {
+ 414   7                    Alarm(sound3);
+ 415   7                    Delay_5s();
+ 416   7                  }
+ 417   6                }
+ 418   5      
+ 419   5              }
+ 420   4            }
+ 421   3          }
+ 422   2        }
+ 423   1        
+ 424   1          if (MB_SGX==Check_Enable)
+ 425   1        {
+ 426   2      //    check_GX();
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 8   
+
+ 427   2        }
+ 428   1        
+ 429   1        
+ 430   1        if (MB_SGZ_ABW==Check_Enable)
+ 431   1        {
+ 432   2          if(Status==1){   /*检测光闸[ W关  ]*/
+ 433   3          if (SWGZ0==SWGZ_open)
+ 434   3          {
+ 435   4            Delay_100us();
+ 436   4            P6status=P6;
+ 437   4            if (SWGZ0==SWGZ_open)
+ 438   4            {
+ 439   5              Delay_100us();
+ 440   5              P6status=P6;
+ 441   5              if (SWGZ0==SWGZ_open)
+ 442   5              {
+ 443   6                halt();
+ 444   6                CJDQ = JDQ_Close; //压缩机断电
+ 445   6                SysFault(54);
+ 446   6                while (1)
+ 447   6                {
+ 448   7                  Alarm(sound3);
+ 449   7                  Delay_5s();
+ 450   7                }
+ 451   6              }
+ 452   5            }
+ 453   4          }
+ 454   3          }else if(Status==2){       /*检测光闸[ W开  ]*/
+ 455   3          if (SWGZ0==SWGZ_close)
+ 456   3          {
+ 457   4            Delay_100us();
+ 458   4            P6status=P6;
+ 459   4            if (SWGZ0==SWGZ_close)
+ 460   4            {
+ 461   5              Delay_100us();
+ 462   5              P6status=P6;
+ 463   5              if (SWGZ0==SWGZ_close)
+ 464   5              {
+ 465   6                halt();
+ 466   6                CJDQ = JDQ_Close; //压缩机断电
+ 467   6                SysFault(54);
+ 468   6                while (1)
+ 469   6                {
+ 470   7                  Alarm(sound3);
+ 471   7                  Delay_5s();
+ 472   7                }
+ 473   6              }
+ 474   5            }
+ 475   4          }
+ 476   3          }
+ 477   2        }
+ 478   1        
+ 479   1        /*检测预燃状态*/
+ 480   1        if (MB_SYR_AB==Check_Enable)
+ 481   1        {
+ 482   2          if(SYR_A==SYR_cancel || SYR_B==SYR_cancel)
+ 483   2          {
+ 484   3            Delay_100us();
+ 485   3            Delay_100us();
+ 486   3            Delay_100us();
+ 487   3            Delay_100us();
+ 488   3            P6status=P6;
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 9   
+
+ 489   3            if(SYR_A==SYR_cancel || SYR_B==SYR_cancel)
+ 490   3            {
+ 491   4              Delay_100us();
+ 492   4              Delay_100us();
+ 493   4              Delay_100us();
+ 494   4              Delay_100us();
+ 495   4              P6status=P6;
+ 496   4              if(SYR_A==SYR_cancel || SYR_B==SYR_cancel)
+ 497   4              {
+ 498   5                halt();
+ 499   5                CJDQ = JDQ_Close; //压缩机断电
+ 500   5                if (biDischanging==Dischanging_Yes)
+ 501   5                {
+ 502   6                  SysFault(8);
+ 503   6                }
+ 504   5                else
+ 505   5                {
+ 506   6                  SysFault(6);
+ 507   6                }
+ 508   5                while (1)
+ 509   5                {
+ 510   6                  Alarm(sound3);
+ 511   6                  Delay_5s();
+ 512   6                }
+ 513   5              }
+ 514   4            }
+ 515   3          }
+ 516   2        }
+ 517   1      
+ 518   1          /*检测脚踏[ 非踏下  ]*/
+ 519   1        if(Status==1){
+ 520   2        if(!(SJTA0==0&&SJTA1==0))
+ 521   2        {/*若SJT1=1  并且SJT2=0的状态不成立*//*即踏下位置或者脚踏开关未连接*/
+ 522   3          LCD_CheckFeetSwitch();
+ 523   3            while(!(SJTA0==0&&SJTA1==0))
+ 524   3          {
+ 525   4            Alarm(sound3);
+ 526   4            Delay_1s();
+ 527   4            P4status=P4;
+ 528   4      
+ 529   4          }
+ 530   3          fnShowdaiji();
+ 531   3      
+ 532   3        }
+ 533   2         }
+ 534   1      
+ 535   1      
+ 536   1          /*检测电机[ 无停转  ]*/
+ 537   1          if ( biTestDianji==TestDianji )
+ 538   1          {
+ 539   2            if ( uiT2OverFlows>20 )
+ 540   2            {
+ 541   3              uiT2OverFlows = 0x00;
+ 542   3      
+ 543   3                halt();
+ 544   3                CJDQ = JDQ_Close; //压缩机断电
+ 545   3                SysFault(10);
+ 546   3                while (1)
+ 547   3                {
+ 548   4                  Alarm(sound3);
+ 549   4                  Delay_5s();
+ 550   4                }
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 10  
+
+ 551   3      
+ 552   3            }
+ 553   2          }
+ 554   1      
+ 555   1        return 0;
+ 556   1      }
+ 557          
+ 558          
+ 559          /*高频充放电过程中的重要检测*/
+ 560          bool Check_Dischanging_1040 (void)
+ 561          {
+ 562   1        if ( ucDischangingDianJi_T2overflows>=20 )
+ 563   1        {
+ 564   2      
+ 565   2          halt();
+ 566   2          CJDQ = JDQ_Close; //压缩机断电
+ 567   2          ucDischangingDianJi_T2overflows = 0x00;
+ 568   2          SysFault(16);
+ 569   2          while (1)
+ 570   2          {
+ 571   3            Alarm(sound3);
+ 572   3            Delay_5s();
+ 573   3          }
+ 574   2        }
+ 575   1        return 0;
+ 576   1      }
+ 577          
+ 578          
+ 579          
+ 580          
+ 581          
+ 582          /*用于停止系统充放电*/
+ 583          void halt (void)
+ 584          {
+ 585   1      
+ 586   1      
+ 587   1        fnDischangVolt_OutPut_uiA(0x0000);
+ 588   1        fnDischangVolt_OutPut_uiB(0x0000);
+ 589   1      
+ 590   1        CCDFD = 0;/*禁止充电命令*/
+ 591   1        CWGZ = GZ_Close;
+ 592   1        CYR_A = YR_Close;
+ 593   1        CYR_B = YR_Close;
+ 594   1        PULSE = 0;
+ 595   1      
+ 596   1        ET0=0;/*禁止放电中断*/
+ 597   1        TR0=0;
+ 598   1        ET2=0;
+ 599   1        TR2=0;
+ 600   1      
+ 601   1      
+ 602   1        return;
+ 603   1      }
+ 604          
+ 605          
+ 606          #endif
+ 607          
+ 608          
+ 609          
+ 610          
+ 611          
+ 612          
+C51 COMPILER V9.60.0.0   CHECK                                                             09/30/2026 09:26:26 PAGE 11  
+
+ 613          
+ 614          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1241    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

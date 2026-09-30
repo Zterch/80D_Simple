@@ -1,0 +1,1144 @@
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ENERGYCONTROL
+OBJECT MODULE PLACED IN EnergyControl.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\EnergyControl.C LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJ
+                    -ECTEXTEND PRINT(.\EnergyControl.lst) TABS(2) OBJECT(EnergyControl.obj)
+
+line level    source
+
+   1          
+   2          #include "include\includes.h"
+   3          
+   4          
+   5          
+   6          /*ÄÜÁ¿¼ì²â×Ó³ÌÐò*/
+   7          
+   8          void fnEnergyControl_ZhunBei_first(void)
+   9          {
+  10   1        uint uiVolt_F;/*·´À¡µçÑ¹*/
+  11   1        uiVolt_F = 0;
+  12   1        /*4 ´Î²âÁ¿Êµ¼ÊÊä³öÄÜÁ¿£¬²¢È¡Æ½¾ù*/
+  13   1        uiVolt_F = EnerVoltJZ();
+  14   1        /*ÄÜÁ¿·´À¡µçÑ¹¸¡µã»¯£¬²¢È¡10 ±¶*/
+  15   1        Ener_S_first = 0.0117*(float)uiVolt_F;  //  uiVolt_F/4096*2.4*10*2   ½á¹ûÎªÁ½Î»Êý Èç£º30£¬´æµÄÇúÏßÊÇ¶ÁµÄ·
+             -´À¡µÄ2±¶
+  16   1      }
+  17          
+  18          
+  19          
+  20          #if 1
+  21          /*×¼±¸Á÷³Ì----  ÄÜÁ¿¿ØÖÆ·½°¸*/
+  22          bool fnEnergyControl_ZhunBei ( void )
+  23          {
+  24   1        //  float temp;/*ÄÜÁ¿³¬²î*/
+  25   1        uint uiVolt_F;/*·´À¡µçÑ¹*/
+  26   1        float Ener_F;/*·´À¡ÄÜÁ¿*/
+  27   1        uchar SetEnergy_fankui;
+  28   1      
+  29   1        uiVolt_F = 0;
+  30   1      
+  31   1        if( double_pluse_flag )
+  32   1        {
+  33   2          /*4 ´Î²âÁ¿Êµ¼ÊÊä³öÄÜÁ¿£¬²¢È¡Æ½¾ù*/
+  34   2          uiVolt_F = EnerVoltJZ();
+  35   2          /*ÄÜÁ¿·´À¡µçÑ¹¸¡µã»¯£¬²¢È¡10 ±¶*/
+  36   2          Ener_S_second = 0.0117*(float)uiVolt_F;  //  uiVolt_F/4096*2.4*10*2   ½á¹ûÎªÁ½Î»Êý Èç£º30£¬´æµÄÇúÏßÊÇ¶Áµ
+             -Ä·´À¡µÄ2±¶    
+  37   2          Ener_F = Ener_S_second+Ener_S_first;
+  38   2        }else{
+  39   2          Ener_F = Ener_S_first;
+  40   2        }
+  41   1      
+  42   1      
+  43   1          if(JT_L_R==Left)
+  44   1        {
+  45   2          if(Select_Laser == ALight){
+  46   3            Ener_S = Ener_Sleft_A;
+  47   3          }else{
+  48   3            Ener_S = Ener_Sleft_B;
+  49   3          }
+  50   2          
+  51   2          SetEnergy_fankui = SetEnergy_left;
+  52   2        }
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 2   
+
+  53   1        else if(JT_L_R==Right)
+  54   1        {
+  55   2          if(Select_Laser == ALight){
+  56   3            Ener_S = Ener_Sright_A;
+  57   3          }else{
+  58   3            Ener_S = Ener_Sright_B;
+  59   3          }
+  60   2          SetEnergy_fankui = SetEnergy_right;
+  61   2        }
+  62   1      
+  63   1        if(Select_Laser == ALight){
+  64   2          if(Ener_F>Ener_A_MAX&&Ener_F<=Ener_S){
+  65   3             Ener_A_MAX=Ener_F;
+  66   3             uiChangVolt_A_MAX=uiChangVolt_A;
+  67   3          }
+  68   2        }else if(Select_Laser == BLight){
+  69   2          if(Ener_F>Ener_B_MAX&&Ener_F<=Ener_S){
+  70   3             Ener_B_MAX=Ener_F;
+  71   3             uiChangVolt_B_MAX=uiChangVolt_B;
+  72   3          }
+  73   2        }
+  74   1      
+  75   1        if(SetEnergy_fankui==3)
+  76   1          {
+  77   2           uiChangVolt_A = 530;
+  78   2           uiChangVolt_B = 530;
+  79   2          }else{
+  80   2        
+  81   2        if( Ener_F>Ener_S )/*ÄÜÁ¿³¬²î´óÓÚ20%*/
+  82   2          {
+  83   3            if(Ener_F>=(Ener_S*1.2))
+  84   3          /*ÄÜÁ¿³¬¹ý20%*/
+  85   3            {
+  86   4               if(Select_Laser == ALight)
+  87   4               {
+  88   5                  uiChangVolt_A = uiChangVolt_A - 5;/*-5V*/
+  89   5               }
+  90   4               else if(Select_Laser == BLight)
+  91   4               {
+  92   5                  uiChangVolt_B = uiChangVolt_B - 5;/*-5V*/
+  93   5               }
+  94   4             /*³äµçµçÑ¹<VcminV£¬±¨¾¯70*/
+  95   4            if (uiChangVolt_A<Vcmin||uiChangVolt_B<Vcmin)
+  96   4            {
+  97   5              halt();
+  98   5              SysFault(70);
+  99   5              while (1)
+ 100   5              {
+ 101   6                Alarm(sound3);
+ 102   6                Delay_5s();
+ 103   6              }
+ 104   5            }
+ 105   4            }
+ 106   3            else if (Ener_F>=(Ener_S*1.1)&&Ener_F<(Ener_S*1.2))/*[+10%,+20%)*/
+ 107   3              {
+ 108   4               if(Select_Laser == ALight)
+ 109   4               {
+ 110   5                  uiChangVolt_A = uiChangVolt_A - 2;/*-2V*/
+ 111   5               }
+ 112   4               else if(Select_Laser == BLight)
+ 113   4               {
+ 114   5                  uiChangVolt_B = uiChangVolt_B - 2;/*-2V*/
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 3   
+
+ 115   5               }
+ 116   4             /*³äµçµçÑ¹<VcminV£¬±¨¾¯70*/
+ 117   4            if (uiChangVolt_A<Vcmin||uiChangVolt_B<Vcmin)
+ 118   4            {
+ 119   5              halt();
+ 120   5              SysFault(71);
+ 121   5              while (1)
+ 122   5              {
+ 123   6                Alarm(sound3);
+ 124   6                Delay_5s();
+ 125   6              }
+ 126   5            }
+ 127   4            }
+ 128   3          else if (Ener_F>=(Ener_S*1.03)&&Ener_F<(Ener_S*1.1))/*[+10%,+20%)*/
+ 129   3              {
+ 130   4               if(Select_Laser == ALight)
+ 131   4               {
+ 132   5                  uiChangVolt_A = uiChangVolt_A - 1;/*-1V*/
+ 133   5               }
+ 134   4               else if(Select_Laser == BLight)
+ 135   4               {
+ 136   5                  uiChangVolt_B = uiChangVolt_B - 1;/*-1V*/
+ 137   5               }
+ 138   4             /*³äµçµçÑ¹<VcminV£¬±¨¾¯70*/
+ 139   4            if (uiChangVolt_A<Vcmin||uiChangVolt_B<Vcmin)
+ 140   4            {
+ 141   5              halt();
+ 142   5              SysFault(72);
+ 143   5              while (1)
+ 144   5              {
+ 145   6                Alarm(sound3);
+ 146   6                Delay_5s();
+ 147   6              }
+ 148   5            }
+ 149   4            }
+ 150   3          }
+ 151   2          else
+ 152   2      {
+ 153   3            if (Ener_F>(Ener_S*0.9)&&Ener_F<(Ener_S*0.97))/*(-10%,-3%)*/
+ 154   3          {
+ 155   4               if(Select_Laser == ALight)
+ 156   4                 {
+ 157   5                  uiChangVolt_A = uiChangVolt_A + 1;/*-1V*/
+ 158   5                 }
+ 159   4               else if(Select_Laser == BLight)
+ 160   4               {
+ 161   5                  uiChangVolt_B = uiChangVolt_B + 1;/*-1V*/
+ 162   5               }
+ 163   4            /*µ÷Õûºó³äµçµçÑ¹>Vcmax£¬Ôò³äµçµçÑ¹¹Ì¶¨ÎªVcmax*/
+ 164   4            
+ 165   4            if (uiChangVolt_A>Vcmax)
+ 166   4                  {
+ 167   5                    uiChangVolt_A = uiChangVolt_A_MAX;
+ 168   5                    Tiaojie_A =1;
+ 169   5                  }
+ 170   4            if (uiChangVolt_B>Vcmax)
+ 171   4                  {
+ 172   5                  uiChangVolt_B = uiChangVolt_B_MAX;
+ 173   5                  Tiaojie_B =1;
+ 174   5                  }
+ 175   4            if(Tiaojie_A ==1){
+ 176   5              uiChangVolt_A = uiChangVolt_A_MAX;
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 4   
+
+ 177   5            }
+ 178   4            if(Tiaojie_B ==1){
+ 179   5              uiChangVolt_B = uiChangVolt_B_MAX;
+ 180   5            }
+ 181   4            
+ 182   4          }
+ 183   3          else if (Ener_F>(Ener_S*0.8)&&Ener_F<(Ener_S*0.9))/*(-20%,-10%)*/
+ 184   3          {
+ 185   4               if(Select_Laser == ALight)
+ 186   4                 {
+ 187   5                  uiChangVolt_A = uiChangVolt_A + 2;/*-2V*/
+ 188   5                 }
+ 189   4               else if(Select_Laser == BLight)
+ 190   4               {
+ 191   5                  uiChangVolt_B = uiChangVolt_B + 2;/*-2V*/
+ 192   5               }
+ 193   4            /*µ÷Õûºó³äµçµçÑ¹>Vcmax£¬Ôò³äµçµçÑ¹¹Ì¶¨ÎªVcmax*/
+ 194   4            
+ 195   4            if (uiChangVolt_A>Vcmax)
+ 196   4                  {
+ 197   5                    uiChangVolt_A = uiChangVolt_A_MAX;
+ 198   5                    Tiaojie_A =1;
+ 199   5                  }
+ 200   4            if (uiChangVolt_B>Vcmax)
+ 201   4                  {
+ 202   5                  uiChangVolt_B = uiChangVolt_B_MAX;
+ 203   5                  Tiaojie_B =1;
+ 204   5                  }
+ 205   4            if(Tiaojie_A ==1){
+ 206   5              uiChangVolt_A = uiChangVolt_A_MAX;
+ 207   5            }
+ 208   4            if(Tiaojie_B ==1){
+ 209   5              uiChangVolt_B = uiChangVolt_B_MAX;
+ 210   5            }
+ 211   4          }
+ 212   3          else if (Ener_F>=(Ener_S*0.5)&&Ener_F<=(Ener_S*0.8))/*[-50%,-20%]*/
+ 213   3          {
+ 214   4              if(Select_Laser == ALight)
+ 215   4            {    if(SetEnergy_fankui>=15)
+ 216   5                uiChangVolt_A = uiChangVolt_A + 10;/*+10V*/
+ 217   5              else
+ 218   5                uiChangVolt_A = uiChangVolt_A + 3;/*+3V*/
+ 219   5            }
+ 220   4            else if(Select_Laser == BLight)
+ 221   4            {   if(SetEnergy_fankui>=15)
+ 222   5                uiChangVolt_B = uiChangVolt_B + 10;/*+10V*/
+ 223   5                else
+ 224   5                uiChangVolt_B = uiChangVolt_B + 3;/*+3V*/
+ 225   5            }
+ 226   4            /*µ÷Õûºó³äµçµçÑ¹>Vcmax£¬Ôò³äµçµçÑ¹¹Ì¶¨ÎªVcmax*/
+ 227   4            
+ 228   4            if (uiChangVolt_A>Vcmax)
+ 229   4                  {
+ 230   5                    uiChangVolt_A = uiChangVolt_A_MAX;
+ 231   5                    Tiaojie_A =1;
+ 232   5                  }
+ 233   4            if (uiChangVolt_B>Vcmax)
+ 234   4                  {
+ 235   5                  uiChangVolt_B = uiChangVolt_B_MAX;
+ 236   5                  Tiaojie_B =1;
+ 237   5                  }
+ 238   4            if(Tiaojie_A ==1){
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 5   
+
+ 239   5              uiChangVolt_A = uiChangVolt_A_MAX;
+ 240   5            }
+ 241   4            if(Tiaojie_B ==1){
+ 242   5              uiChangVolt_B = uiChangVolt_B_MAX;
+ 243   5            }
+ 244   4          }
+ 245   3          else if (Ener_F<(Ener_S*0.5))/*(-oo%,-50%)*/
+ 246   3          {
+ 247   4              
+ 248   4            if(Select_Laser == ALight)
+ 249   4            {    if(SetEnergy_fankui>=15)
+ 250   5                uiChangVolt_A = uiChangVolt_A + 25;/*+25V*/
+ 251   5              else
+ 252   5                uiChangVolt_A = uiChangVolt_A + 6;/*+6V*/
+ 253   5            }
+ 254   4            else if(Select_Laser == BLight)
+ 255   4            {   if(SetEnergy_fankui>=15)
+ 256   5                uiChangVolt_B = uiChangVolt_B + 25;/*+25V*/
+ 257   5                else
+ 258   5                uiChangVolt_B = uiChangVolt_B + 6;/*+6V*/
+ 259   5            }
+ 260   4            
+ 261   4            /*µ÷Õûºó³äµçµçÑ¹>Vcmax£¬Ôò³äµçµçÑ¹¹Ì¶¨ÎªVcmax   */
+ 262   4            if (Tiaojie_A ==1||Tiaojie_B ==1)
+ 263   4            {
+ 264   5              Count_F50V1000++;
+ 265   5              if (Count_F50V1000>200)
+ 266   5              {
+ 267   6                halt();
+ 268   6                SysFault(73);
+ 269   6                while (1)
+ 270   6                {
+ 271   7                  Alarm(sound3);
+ 272   7                  Delay_5s();
+ 273   7                }
+ 274   6              }
+ 275   5            }             
+ 276   4            if (uiChangVolt_A>Vcmax)
+ 277   4                  {
+ 278   5                    uiChangVolt_A = uiChangVolt_A_MAX;
+ 279   5                    Tiaojie_A =1;
+ 280   5                  }
+ 281   4            if (uiChangVolt_B>Vcmax)
+ 282   4                  {
+ 283   5                  uiChangVolt_B = uiChangVolt_B_MAX;
+ 284   5                  Tiaojie_B =1;
+ 285   5                  }
+ 286   4            if(Tiaojie_A ==1){
+ 287   5              uiChangVolt_A = uiChangVolt_A_MAX;
+ 288   5            }
+ 289   4            if(Tiaojie_B ==1){
+ 290   5              uiChangVolt_B = uiChangVolt_B_MAX;
+ 291   5            }
+ 292   4          }
+ 293   3          }
+ 294   2         }
+ 295   1          
+ 296   1      
+ 297   1         //ÐÞ¸Ä³äµçµçÑ¹
+ 298   1        if(Select_Laser == ALight){
+ 299   2          fnDischangVolt_OutPut_uiA(uiChangVolt_A);
+ 300   2      
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 6   
+
+ 301   2        }else if(Select_Laser == BLight){
+ 302   2          fnDischangVolt_OutPut_uiB(uiChangVolt_B);
+ 303   2        
+ 304   2        }
+ 305   1      
+ 306   1        return 0;
+ 307   1      }
+ 308          
+ 309          
+ 310          
+ 311          
+ 312          /*¸÷¸öÆµÂÊÏÂ×î´ó¿ÉÉè¶¨ÄÜÁ¿*/
+ 313          void CalMaxEner_Ho(void)
+ 314          {
+ 315   1       if(double_pluse_flag){
+ 316   2        switch (SetFrequency)
+ 317   2        {
+ 318   3          case 3: maxLimitSetEnergy_Ho=10;break;
+ 319   3          case 4: maxLimitSetEnergy_Ho=20;break;
+ 320   3          case 5: maxLimitSetEnergy_Ho=70;break;
+ 321   3          case 6: maxLimitSetEnergy_Ho=70;break;
+ 322   3          case 7: maxLimitSetEnergy_Ho=70;break;
+ 323   3          case 8: maxLimitSetEnergy_Ho=70;break;
+ 324   3          case 9: maxLimitSetEnergy_Ho=70;break;
+ 325   3          case 10: maxLimitSetEnergy_Ho=70;break;
+ 326   3          case 11: maxLimitSetEnergy_Ho=68;break;
+ 327   3          case 12: maxLimitSetEnergy_Ho=67;break; 
+ 328   3          case 13: maxLimitSetEnergy_Ho=62;break;       
+ 329   3          case 14: maxLimitSetEnergy_Ho=46;break;
+ 330   3          case 15: maxLimitSetEnergy_Ho=40;break;   
+ 331   3          case 16: maxLimitSetEnergy_Ho=38;break;
+ 332   3          case 17: maxLimitSetEnergy_Ho=30;break;   
+ 333   3          case 18: maxLimitSetEnergy_Ho=28;break;
+ 334   3          case 19: maxLimitSetEnergy_Ho=20;break;   
+ 335   3          case 20: maxLimitSetEnergy_Ho=20;break;
+ 336   3          case 21: maxLimitSetEnergy_Ho=19;break;   
+ 337   3          case 22: maxLimitSetEnergy_Ho=14;break;   
+ 338   3          case 23: maxLimitSetEnergy_Ho=13;break;   
+ 339   3          case 24: maxLimitSetEnergy_Ho=13;break;   
+ 340   3          case 25: maxLimitSetEnergy_Ho=12;break;   
+ 341   3          case 26: maxLimitSetEnergy_Ho=12;break;
+ 342   3          case 27: maxLimitSetEnergy_Ho=11;break;   
+ 343   3          case 28: maxLimitSetEnergy_Ho=8;break;    
+ 344   3          case 29: maxLimitSetEnergy_Ho=6;break;    
+ 345   3          case 30: maxLimitSetEnergy_Ho=5;break;
+ 346   3      
+ 347   3          default: maxLimitSetEnergy_Ho=minEner;break;
+ 348   3        }
+ 349   2       }else{
+ 350   2          switch (SetFrequency)
+ 351   2        {
+ 352   3          case 5: maxLimitSetEnergy_Ho=10;break;
+ 353   3          case 6: maxLimitSetEnergy_Ho=10;break;
+ 354   3          case 7: maxLimitSetEnergy_Ho=20;break;
+ 355   3          case 8: maxLimitSetEnergy_Ho=50;break;
+ 356   3          case 9: maxLimitSetEnergy_Ho=35;break;
+ 357   3          case 10: maxLimitSetEnergy_Ho=30;break;
+ 358   3          case 11: maxLimitSetEnergy_Ho=28;break;
+ 359   3          case 12: maxLimitSetEnergy_Ho=28;break;
+ 360   3          
+ 361   3          case 14: maxLimitSetEnergy_Ho=20;break;
+ 362   3          case 16: maxLimitSetEnergy_Ho=35;break;
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 7   
+
+ 363   3          case 18: maxLimitSetEnergy_Ho=35;break;
+ 364   3          case 20: maxLimitSetEnergy_Ho=50;break;
+ 365   3          case 22: maxLimitSetEnergy_Ho=30;break;
+ 366   3          
+ 367   3          case 24: maxLimitSetEnergy_Ho=38;break;
+ 368   3          
+ 369   3          case 27: maxLimitSetEnergy_Ho=28;break;
+ 370   3      //    case 28: maxLimitSetEnergy_Ho=25;break;
+ 371   3          case 30: maxLimitSetEnergy_Ho=20;break;
+ 372   3          case 33: maxLimitSetEnergy_Ho=20;break;
+ 373   3      //    case 34: maxLimitSetEnergy_Ho=20;break;
+ 374   3          case 36: maxLimitSetEnergy_Ho=20;break;
+ 375   3      //    case 38: maxLimitSetEnergy_Ho=20;break;
+ 376   3          case 40: maxLimitSetEnergy_Ho=20;break;
+ 377   3          case 45: maxLimitSetEnergy_Ho=5;break;
+ 378   3          case 50: maxLimitSetEnergy_Ho=5;break;
+ 379   3      //    case 52: maxLimitSetEnergy_Ho=5;break;
+ 380   3          case 55: maxLimitSetEnergy_Ho=5;break;
+ 381   3          case 60: maxLimitSetEnergy_Ho=5;break;
+ 382   3          default: maxLimitSetEnergy_Ho=minEner;break;
+ 383   3        }
+ 384   2       }
+ 385   1        return;
+ 386   1      }
+ 387          
+ 388          
+ 389          
+ 390          
+ 391          /*Ä¿±êÖµ*/
+ 392          #if 1
+ 393          /*¶ÁÈ¡¸Ã¹¤×÷µãµÄÄÜÁ¿µçÑ¹Ä¿±êÖµ*/
+ 394          void fnReadEnergyVoltage (uchar ucEne, uchar ucFre)
+ 395          {
+ 396   1        uchar temp1;
+ 397   1        uchar temp2;
+ 398   1        uint address_save;
+ 399   1        if( Ener_AB_flag==0 )  //AÂ··´À¡
+ 400   1        {   
+ 401   2          if( double_pluse_flag ) //Ë«Âö³å
+ 402   2          {
+ 403   3            if( long_short_pluse_flag ) //³¤Âö³å
+ 404   3            {
+ 405   4              if (ucFre<=10)
+ 406   4              {
+ 407   5                address_save = Address_BaseEnergyVoltage_03Hz_D + ( ucEne - 5 ) * 2;
+ 408   5              }
+ 409   4              else if (ucFre<20)
+ 410   4              {
+ 411   5                address_save = Address_BaseEnergyVoltage_06Hz_D + ( ucEne - 5 ) * 2;
+ 412   5              }
+ 413   4              else
+ 414   4              {
+ 415   5                address_save = Address_BaseEnergyVoltage_10Hz_D + ( ucEne - 5 ) * 2;
+ 416   5              }
+ 417   4            } 
+ 418   3            else //¶ÌÂö³å
+ 419   3            {
+ 420   4              if (ucFre<=10)
+ 421   4              {
+ 422   5                address_save = Address_BaseEnergyVoltage_03Hz_D + ( ucEne - 3 ) * 2;
+ 423   5              }
+ 424   4              else if (ucFre<20)
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 8   
+
+ 425   4              {
+ 426   5                address_save = Address_BaseEnergyVoltage_06Hz_D + ( ucEne - 3 ) * 2;
+ 427   5              }
+ 428   4              else
+ 429   4              {
+ 430   5                address_save = Address_BaseEnergyVoltage_10Hz_D + ( ucEne - 3 ) * 2;
+ 431   5              }
+ 432   4           }
+ 433   3      
+ 434   3      
+ 435   3          }else{
+ 436   3            if( long_short_pluse_flag ) //³¤Âö³å
+ 437   3            {
+ 438   4              if (ucFre==8||ucFre==16)
+ 439   4              {
+ 440   5                address_save = Address_BaseEnergyVoltage_08Hz + ( ucEne - 5 ) * 2;
+ 441   5              }
+ 442   4              else if (ucFre==10||ucFre==20)
+ 443   4              {
+ 444   5                address_save = Address_BaseEnergyVoltage_10Hz + ( ucEne - 5 ) * 2;
+ 445   5              }
+ 446   4              else if (ucFre==24||ucFre==12)
+ 447   4              {
+ 448   5                address_save = Address_BaseEnergyVoltage_24Hz + ( ucEne - 5 ) * 2;
+ 449   5              }
+ 450   4              else
+ 451   4              {
+ 452   5                address_save = Address_BaseEnergyVoltage_99Hz + ( ucEne - 5 ) * 2;
+ 453   5              }
+ 454   4            } 
+ 455   3            else //¶ÌÂö³å
+ 456   3            {
+ 457   4              if (ucFre==8||ucFre==16)
+ 458   4              {
+ 459   5                address_save = Address_BaseEnergyVoltage_08Hz + ( ucEne - 3 ) * 2;
+ 460   5              }
+ 461   4              else if (ucFre==10||ucFre==20)
+ 462   4              {
+ 463   5                address_save = Address_BaseEnergyVoltage_10Hz + ( ucEne - 3 ) * 2;
+ 464   5              }
+ 465   4              else if (ucFre==24||ucFre==12)
+ 466   4              {
+ 467   5                address_save = Address_BaseEnergyVoltage_24Hz + ( ucEne - 3 ) * 2;
+ 468   5              }
+ 469   4              else
+ 470   4              {
+ 471   5                address_save = Address_BaseEnergyVoltage_99Hz + ( ucEne - 3 ) * 2;
+ 472   5              }
+ 473   4              
+ 474   4            }
+ 475   3          }
+ 476   2        }else   //BÂ··´À¡
+ 477   1        {   
+ 478   2          if( double_pluse_flag ) //Ë«Âö³å
+ 479   2          {
+ 480   3            if( long_short_pluse_flag ) //³¤Âö³å
+ 481   3            {
+ 482   4              if (ucFre<=10)
+ 483   4              {
+ 484   5                address_save = Address_BaseEnergyVoltage_03Hz_D + ( ucEne - 4 ) * 2;
+ 485   5              }
+ 486   4              else if (ucFre<20)
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 9   
+
+ 487   4              {
+ 488   5                address_save = Address_BaseEnergyVoltage_06Hz_D + ( ucEne - 4 ) * 2;
+ 489   5              }
+ 490   4              else
+ 491   4              {
+ 492   5                address_save = Address_BaseEnergyVoltage_10Hz_D + ( ucEne - 4 ) * 2;
+ 493   5              }
+ 494   4            } 
+ 495   3            else //¶ÌÂö³å
+ 496   3            {
+ 497   4              if (ucFre<=10)
+ 498   4              {
+ 499   5                address_save = Address_BaseEnergyVoltage_03Hz_D + ( ucEne - 2 ) * 2;
+ 500   5              }
+ 501   4              else if (ucFre<20)
+ 502   4              {
+ 503   5                address_save = Address_BaseEnergyVoltage_06Hz_D + ( ucEne - 2 ) * 2;
+ 504   5              }
+ 505   4              else
+ 506   4              {
+ 507   5                address_save = Address_BaseEnergyVoltage_10Hz_D + ( ucEne - 2 ) * 2;
+ 508   5              }
+ 509   4           }
+ 510   3      
+ 511   3      
+ 512   3          }else{
+ 513   3            if( long_short_pluse_flag ) //³¤Âö³å
+ 514   3            {
+ 515   4              if (ucFre==8||ucFre==16)
+ 516   4              {
+ 517   5                address_save = Address_BaseEnergyVoltage_08Hz + ( ucEne - 4 ) * 2;
+ 518   5              }
+ 519   4              else if (ucFre==10||ucFre==20)
+ 520   4              {
+ 521   5                address_save = Address_BaseEnergyVoltage_10Hz + ( ucEne - 4 ) * 2;
+ 522   5              }
+ 523   4              else if (ucFre==24||ucFre==12)
+ 524   4              {
+ 525   5                address_save = Address_BaseEnergyVoltage_24Hz + ( ucEne - 4 ) * 2;
+ 526   5              }
+ 527   4              else
+ 528   4              {
+ 529   5                address_save = Address_BaseEnergyVoltage_99Hz + ( ucEne - 4 ) * 2;
+ 530   5              }
+ 531   4            } 
+ 532   3            else //¶ÌÂö³å
+ 533   3            {
+ 534   4              if (ucFre==8||ucFre==16)
+ 535   4              {
+ 536   5                address_save = Address_BaseEnergyVoltage_08Hz + ( ucEne - 2 ) * 2;
+ 537   5              }
+ 538   4              else if (ucFre==10||ucFre==20)
+ 539   4              {
+ 540   5                address_save = Address_BaseEnergyVoltage_10Hz + ( ucEne - 2 ) * 2;
+ 541   5              }
+ 542   4              else if (ucFre==24||ucFre==12)
+ 543   4              {
+ 544   5                address_save = Address_BaseEnergyVoltage_24Hz + ( ucEne - 2 ) * 2;
+ 545   5              }
+ 546   4              else
+ 547   4              {
+ 548   5                address_save = Address_BaseEnergyVoltage_99Hz + ( ucEne - 2 ) * 2;
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 10  
+
+ 549   5              }
+ 550   4              
+ 551   4            }
+ 552   3          }
+ 553   2        }
+ 554   1        
+ 555   1        read_data(0xa0,address_save,qushuzu,1);
+ 556   1        Delay( 1000 );
+ 557   1        temp1 = qushuzu[0];
+ 558   1        read_data(0xa0,address_save+1,qushuzu,1);
+ 559   1        Delay( 1000 );
+ 560   1        temp2 = qushuzu[0];
+ 561   1        uiEner_S = 256*(uint)temp1 + (uint)temp2;
+ 562   1        if (uiEner_S>1000||uiEner_S==0)
+ 563   1        {
+ 564   2      //    uiEner_S=50;
+ 565   2          if( double_pluse_flag )  //Ë«Âö³å
+ 566   2          {
+ 567   3            if(ucEne==5){
+ 568   4              uiEner_S=90;      
+ 569   4            }else if(ucEne==13){
+ 570   4              uiEner_S=200;     
+ 571   4            }else if(ucEne==21){
+ 572   4              uiEner_S=320;     
+ 573   4            }else if(ucEne==29){
+ 574   4              uiEner_S=410;     
+ 575   4            }else if(ucEne==37){
+ 576   4              uiEner_S=490;     
+ 577   4            }
+ 578   3          }else{
+ 579   3            if(ucEne==5){
+ 580   4              uiEner_S=50;      
+ 581   4            }else if(ucEne==13){
+ 582   4              uiEner_S=100;     
+ 583   4            }else if(ucEne==21){
+ 584   4              uiEner_S=180;     
+ 585   4            }else if(ucEne==29){
+ 586   4              uiEner_S=230;     
+ 587   4            }else if(ucEne==37){
+ 588   4              uiEner_S=260;     
+ 589   4            }else if(ucEne==45){
+ 590   4              uiEner_S=290;     
+ 591   4            }else if(ucEne==53){
+ 592   4              uiEner_S=310;     
+ 593   4            }
+ 594   3          }
+ 595   2      
+ 596   2        }
+ 597   1      }
+ 598          
+ 599          /*±£´æ¸Ã¹¤×÷µãµÄÄÜÁ¿µçÑ¹Ä¿±êÖµ*/
+ 600          void fnWriteEnergyVoltage (uchar ucEne, uchar ucFre)
+ 601          {
+ 602   1        uint address_save;
+ 603   1        if( Ener_AB_flag==0 )  //AÂ··´À¡
+ 604   1        {   
+ 605   2          if( double_pluse_flag )  //Ë«Âö³å
+ 606   2          {
+ 607   3            if( long_short_pluse_flag ) //³¤Âö³å
+ 608   3            {
+ 609   4              if (ucFre==4)
+ 610   4              {
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 11  
+
+ 611   5                address_save = Address_BaseEnergyVoltage_03Hz_D + ( ucEne - 5 ) * 2;
+ 612   5              }
+ 613   4              else if (ucFre==14)
+ 614   4              {
+ 615   5                address_save = Address_BaseEnergyVoltage_06Hz_D + ( ucEne - 5 ) * 2;
+ 616   5              }
+ 617   4              else if (ucFre==20)
+ 618   4              {
+ 619   5                address_save = Address_BaseEnergyVoltage_10Hz_D + ( ucEne - 5 ) * 2;
+ 620   5              }
+ 621   4              else
+ 622   4              {
+ 623   5                SysFault(61);
+ 624   5                while (1)
+ 625   5                {
+ 626   6                  Alarm(sound3);
+ 627   6                  Delay_5s();
+ 628   6                }
+ 629   5              }
+ 630   4            }
+ 631   3            else{    //¶ÌÂö³å
+ 632   4              if (ucFre==4)
+ 633   4              {
+ 634   5                address_save = Address_BaseEnergyVoltage_03Hz_D + ( ucEne - 3 ) * 2;
+ 635   5              }
+ 636   4              else if (ucFre==14)
+ 637   4              {
+ 638   5                address_save = Address_BaseEnergyVoltage_06Hz_D + ( ucEne - 3 ) * 2;
+ 639   5              }
+ 640   4              else if (ucFre==20)
+ 641   4              {
+ 642   5                address_save = Address_BaseEnergyVoltage_10Hz_D + ( ucEne - 3 ) * 2;
+ 643   5              }
+ 644   4              else
+ 645   4              {
+ 646   5                SysFault(61);
+ 647   5                while (1)
+ 648   5                {
+ 649   6                  Alarm(sound3);
+ 650   6                  Delay_5s();
+ 651   6                }
+ 652   5              }
+ 653   4            }
+ 654   3      
+ 655   3          }else{    //µ¥Âö³å
+ 656   3            if( long_short_pluse_flag ) //³¤Âö³å
+ 657   3            {
+ 658   4              if (ucFre==8)
+ 659   4              {
+ 660   5                address_save = Address_BaseEnergyVoltage_08Hz + ( ucEne - 5 ) * 2;
+ 661   5              }
+ 662   4              else if (ucFre==10)
+ 663   4              {
+ 664   5                address_save = Address_BaseEnergyVoltage_10Hz + ( ucEne - 5 ) * 2;
+ 665   5              }
+ 666   4              else if (ucFre==24)
+ 667   4              {
+ 668   5                address_save = Address_BaseEnergyVoltage_24Hz + ( ucEne - 5 ) * 2;
+ 669   5              }
+ 670   4              else if(ucFre==99||!(ucFre==8||ucFre==10||ucFre==24))
+ 671   4              {
+ 672   5                address_save = Address_BaseEnergyVoltage_99Hz + ( ucEne - 5 ) * 2;
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 12  
+
+ 673   5              }
+ 674   4              else
+ 675   4              {
+ 676   5                SysFault(61);
+ 677   5                while (1)
+ 678   5                {
+ 679   6                  Alarm(sound3);
+ 680   6                  Delay_5s();
+ 681   6                }
+ 682   5              }
+ 683   4            }
+ 684   3            else{    //¶ÌÂö³å
+ 685   4              if (ucFre==8)
+ 686   4              {
+ 687   5                address_save = Address_BaseEnergyVoltage_08Hz + ( ucEne - 3 ) * 2;
+ 688   5              }
+ 689   4              else if (ucFre==10)
+ 690   4              {
+ 691   5                address_save = Address_BaseEnergyVoltage_10Hz + ( ucEne - 3 ) * 2;
+ 692   5              }
+ 693   4              else if (ucFre==24)
+ 694   4              {
+ 695   5                address_save = Address_BaseEnergyVoltage_24Hz + ( ucEne - 3 ) * 2;
+ 696   5              }
+ 697   4              else if(ucFre==99||!(ucFre==8||ucFre==10||ucFre==24))
+ 698   4              {
+ 699   5                address_save = Address_BaseEnergyVoltage_99Hz + ( ucEne - 3 ) * 2;
+ 700   5              }
+ 701   4              else
+ 702   4              {
+ 703   5                SysFault(61);
+ 704   5                while (1)
+ 705   5                {
+ 706   6                  Alarm(sound3);
+ 707   6                  Delay_5s();
+ 708   6                }
+ 709   5              }
+ 710   4            }
+ 711   3            
+ 712   3          }
+ 713   2        }else  //BÂ··´À¡
+ 714   1        {   
+ 715   2          if( double_pluse_flag )    //Ë«Âö³å
+ 716   2          {
+ 717   3            if( long_short_pluse_flag ) //³¤Âö³å
+ 718   3            {
+ 719   4              if (ucFre==4)
+ 720   4              {
+ 721   5                address_save = Address_BaseEnergyVoltage_03Hz_D + ( ucEne - 4 ) * 2;
+ 722   5              }
+ 723   4              else if (ucFre==14)
+ 724   4              {
+ 725   5                address_save = Address_BaseEnergyVoltage_06Hz_D + ( ucEne - 4 ) * 2;
+ 726   5              }
+ 727   4              else if (ucFre==20)
+ 728   4              {
+ 729   5                address_save = Address_BaseEnergyVoltage_10Hz_D + ( ucEne - 4 ) * 2;
+ 730   5              }
+ 731   4              else
+ 732   4              {
+ 733   5                SysFault(61);
+ 734   5                while (1)
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 13  
+
+ 735   5                {
+ 736   6                  Alarm(sound3);
+ 737   6                  Delay_5s();
+ 738   6                }
+ 739   5              }
+ 740   4            }
+ 741   3            else{    //¶ÌÂö³å
+ 742   4              if (ucFre==4)
+ 743   4              {
+ 744   5                address_save = Address_BaseEnergyVoltage_03Hz_D + ( ucEne - 2 ) * 2;
+ 745   5              }
+ 746   4              else if (ucFre==14)
+ 747   4              {
+ 748   5                address_save = Address_BaseEnergyVoltage_06Hz_D + ( ucEne - 2 ) * 2;
+ 749   5              }
+ 750   4              else if (ucFre==20)
+ 751   4              {
+ 752   5                address_save = Address_BaseEnergyVoltage_10Hz_D + ( ucEne - 2 ) * 2;
+ 753   5              }
+ 754   4              else
+ 755   4              {
+ 756   5                SysFault(61);
+ 757   5                while (1)
+ 758   5                {
+ 759   6                  Alarm(sound3);
+ 760   6                  Delay_5s();
+ 761   6                }
+ 762   5              }
+ 763   4            }
+ 764   3      
+ 765   3          }else{
+ 766   3            if( long_short_pluse_flag ) //³¤Âö³å
+ 767   3            {
+ 768   4              if (ucFre==8)
+ 769   4              {
+ 770   5                address_save = Address_BaseEnergyVoltage_08Hz + ( ucEne - 4 ) * 2;
+ 771   5              }
+ 772   4              else if (ucFre==10)
+ 773   4              {
+ 774   5                address_save = Address_BaseEnergyVoltage_10Hz + ( ucEne - 4 ) * 2;
+ 775   5              }
+ 776   4              else if (ucFre==24)
+ 777   4              {
+ 778   5                address_save = Address_BaseEnergyVoltage_24Hz + ( ucEne - 4 ) * 2;
+ 779   5              }
+ 780   4              else if(ucFre==99||!(ucFre==8||ucFre==10||ucFre==24))
+ 781   4              {
+ 782   5                address_save = Address_BaseEnergyVoltage_99Hz + ( ucEne - 4 ) * 2;
+ 783   5              }
+ 784   4              else
+ 785   4              {
+ 786   5                SysFault(61);
+ 787   5                while (1)
+ 788   5                {
+ 789   6                  Alarm(sound3);
+ 790   6                  Delay_5s();
+ 791   6                }
+ 792   5              }
+ 793   4            }
+ 794   3            else{    //¶ÌÂö³å
+ 795   4              if (ucFre==8)
+ 796   4              {
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 14  
+
+ 797   5                address_save = Address_BaseEnergyVoltage_08Hz + ( ucEne - 2 ) * 2;
+ 798   5              }
+ 799   4              else if (ucFre==10)
+ 800   4              {
+ 801   5                address_save = Address_BaseEnergyVoltage_10Hz + ( ucEne - 2 ) * 2;
+ 802   5              }
+ 803   4              else if (ucFre==24)
+ 804   4              {
+ 805   5                address_save = Address_BaseEnergyVoltage_24Hz + ( ucEne - 2 ) * 2;
+ 806   5              }
+ 807   4              else if(ucFre==99||!(ucFre==8||ucFre==10||ucFre==24))
+ 808   4              {
+ 809   5                address_save = Address_BaseEnergyVoltage_99Hz + ( ucEne - 2 ) * 2;
+ 810   5              }
+ 811   4              else
+ 812   4              {
+ 813   5                SysFault(61);
+ 814   5                while (1)
+ 815   5                {
+ 816   6                  Alarm(sound3);
+ 817   6                  Delay_5s();
+ 818   6                }
+ 819   5              }
+ 820   4            }
+ 821   3            
+ 822   3          }
+ 823   2        }
+ 824   1        
+ 825   1        saveshuzu[0]=uiEner_S/256;;
+ 826   1        write_data(0xa0,address_save,saveshuzu,1);
+ 827   1        Delay( 1000 );
+ 828   1        saveshuzu[0]=uiEner_S%256;;
+ 829   1        write_data(0xa0,address_save+1,saveshuzu,1);
+ 830   1        Delay( 1000 );
+ 831   1      }
+ 832          #endif
+ 833          
+ 834          uint EnerVoltJZ(void)
+ 835          {/*1.5ms*/
+ 836   1        uint sumavgEnergy;/*ÄÜÁ¿ÀÛ¼ÓÖµ*/  
+ 837   1        uchar i;
+ 838   1        sumavgEnergy = 0;
+ 839   1        for (i=0;i<4;i++)
+ 840   1        {
+ 841   2          adstart(0);   //Æô¶¯ADCÄÜÁ¿¼ì²â
+ 842   2          while(adc0_flag==0);
+ 843   2          adc0_flag=0;
+ 844   2          sumavgEnergy += oneEnergy;
+ 845   2        }
+ 846   1        sumavgEnergy = sumavgEnergy>>2;
+ 847   1        return sumavgEnergy;
+ 848   1      }
+ 849          
+ 850          void ADC0_Init (void)
+ 851          {
+ 852   1        AMX0CF   = 0x00;            //µ¥¶Ë·½Ê½
+ 853   1        AMX0SL   = 0x00;            //AIN0
+ 854   1        REF0CN  |= 0x03;            //ÄÚ²¿»ù×¼ Ê¹ÓÃvef0
+ 855   1        ADC0CF   = 0x40;            //ÏµÍ³Ê±ÖÓ10·ÖÆµ×÷Îªadc0µÄÊ±ÖÓÔ´  ÎÞÔöÒæ  ¿ÉÄÜ»áÓÐÎÊÌâ ÊäÈëµçÑ¹×î´ó²»Ó¦³¬¹ý3.
+             -3v
+ 856   1        ADC0CN   = 0xC0;            //Ê¹ÄÜ£¬¶¨ÒåÐ´ad0busy=1¿ªÊ¼×ª»» ÓÒ¶ÔÆë
+ 857   1        EIE2    |= 0x02;            //Ê¹ÄÜÖÐ¶Ï    
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 15  
+
+ 858   1      }
+ 859          
+ 860           void adstart(unsigned char k)
+ 861          {
+ 862   1      
+ 863   1        adc_select=k;
+ 864   1        switch(k)
+ 865   1        {
+ 866   2         
+ 867   2        case 0:
+ 868   2            AMX0SL=0x00;  //AIN0
+ 869   2         ADC0CN=ADC0CN|0x10;  //star AD converte
+ 870   2         break;
+ 871   2         case 1:        
+ 872   2          AMX0SL=0x01;  //AIN2
+ 873   2          ADC0CN=ADC0CN|0x10;  //star AD converte    
+ 874   2         break;
+ 875   2         case 2:
+ 876   2          AMX0SL=0x02;  //AIN2
+ 877   2          ADC0CN=ADC0CN|0x10;  //star AD converte
+ 878   2         break;
+ 879   2          default:  
+ 880   2           break;
+ 881   2         }
+ 882   1      } 
+ 883          
+ 884          
+ 885          void ADC0_ISR (void) interrupt 15
+ 886          {
+ 887   1                            
+ 888   1      
+ 889   1         AD0INT = 0;               // Çå ADC ÖÐ¶Ï±êÖ¾Î»
+ 890   1        if(adc_select==0){
+ 891   2         oneEnergy = ADC0H;              // ¶ÁÈ¡ADC0HÊý¾Ý£¬´Ë´¦ÑÝÊ¾£¬½öÈ¡¸ß8Î»
+ 892   2         oneEnergy <<= 8;
+ 893   2         oneEnergy |= ADC0L;
+ 894   2         adc0_flag=1;
+ 895   2        }else if(adc_select==1){
+ 896   2        detect_VA = ADC0H;               // ¶ÁÈ¡ADC0HÊý¾Ý£¬´Ë´¦ÑÝÊ¾£¬½öÈ¡¸ß8Î»
+ 897   2         detect_VA <<= 8;
+ 898   2         detect_VA |= ADC0L;
+ 899   2         detect_flag=1;
+ 900   2        }else if(adc_select==2){
+ 901   2        detect_VB = ADC0H;               // ¶ÁÈ¡ADC0HÊý¾Ý£¬´Ë´¦ÑÝÊ¾£¬½öÈ¡¸ß8Î»
+ 902   2         detect_VB <<= 8;
+ 903   2         detect_VB |= ADC0L;
+ 904   2         detect_flag=1;
+ 905   2        }
+ 906   1         
+ 907   1      }
+ 908          
+ 909          void Power_FeedBack(uchar SetEnergy_data)
+ 910          {
+ 911   1          
+ 912   1          if( double_pluse_flag )
+ 913   1          {
+ 914   2            SetEnergy_data=SetEnergy_data/2;
+ 915   2          }
+ 916   1          
+ 917   1          Ener_AB_flag = 0;      //AÂ·
+ 918   1          if (SetEnergy_data==5||SetEnergy_data==13||SetEnergy_data==21||SetEnergy_data==29||SetEnergy_data==37||S
+             -etEnergy_data==45)
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 16  
+
+ 919   1          {
+ 920   2            fnReadEnergyVoltage(SetEnergy_data, SetFrequency);
+ 921   2            Ener_SA_temp  = (float)uiEner_S;
+ 922   2            Ener_SA_temp = Ener_SA_temp/10.0;
+ 923   2          }
+ 924   1          else
+ 925   1          {
+ 926   2                    /*2¸ö±äÁ¿¸´ÓÃËµÃ÷*/
+ 927   2                    /*Power   ´æ´¢µÍ¶ËÄÜÁ¿·´À¡µçÑ¹*/
+ 928   2                    /*uiEner_S  ´æ´¢¸ß¶ËÄÜÁ¿·´À¡µçÑ¹*/
+ 929   2            if (SetEnergy_data>EnerStep05&&SetEnergy_data<EnerStep13)
+ 930   2            {
+ 931   3              fnReadEnergyVoltage(EnerStep05, SetFrequency);
+ 932   3              Power = uiEner_S;
+ 933   3              fnReadEnergyVoltage(EnerStep13, SetFrequency);
+ 934   3              uiEner_S = (uiEner_S-Power)>>3;
+ 935   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep05)*uiEner_S;
+ 936   3            }
+ 937   2            else if (SetEnergy_data>EnerStep13&&SetEnergy_data<EnerStep21)
+ 938   2            {
+ 939   3              fnReadEnergyVoltage(EnerStep13, SetFrequency);
+ 940   3              Power = uiEner_S;
+ 941   3              fnReadEnergyVoltage(EnerStep21, SetFrequency);
+ 942   3              uiEner_S = (uiEner_S-Power)>>3;
+ 943   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep13)*uiEner_S;
+ 944   3            }
+ 945   2            else if (SetEnergy_data>EnerStep21&&SetEnergy_data<EnerStep29)
+ 946   2            {
+ 947   3              fnReadEnergyVoltage(EnerStep21, SetFrequency);
+ 948   3              Power = uiEner_S;
+ 949   3              fnReadEnergyVoltage(EnerStep29, SetFrequency);
+ 950   3              uiEner_S = (uiEner_S-Power)>>3;
+ 951   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep21)*uiEner_S;
+ 952   3            }
+ 953   2            else if (SetEnergy_data>EnerStep29&&SetEnergy_data<EnerStep37)//
+ 954   2            {
+ 955   3              fnReadEnergyVoltage(EnerStep29, SetFrequency);
+ 956   3              Power = uiEner_S;
+ 957   3              fnReadEnergyVoltage(EnerStep37, SetFrequency);
+ 958   3              uiEner_S = (uiEner_S-Power)>>3;
+ 959   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep29)*uiEner_S;
+ 960   3            }
+ 961   2            else if (SetEnergy_data>EnerStep37&&SetEnergy_data<EnerStep45)//
+ 962   2            {
+ 963   3              fnReadEnergyVoltage(EnerStep37, SetFrequency);
+ 964   3              Power = uiEner_S;
+ 965   3              fnReadEnergyVoltage(EnerStep45, SetFrequency);
+ 966   3              uiEner_S = (uiEner_S-Power)>>3;
+ 967   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep37)*uiEner_S;
+ 968   3            }
+ 969   2            else if (SetEnergy_data>EnerStep45)//
+ 970   2            {
+ 971   3              fnReadEnergyVoltage(EnerStep45, SetFrequency);
+ 972   3              Power = uiEner_S;
+ 973   3              fnReadEnergyVoltage(EnerStep53, SetFrequency);
+ 974   3              uiEner_S = (uiEner_S-Power)>>3;
+ 975   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep45)*uiEner_S;
+ 976   3            }
+ 977   2            else if(SetEnergy_data>0&&SetEnergy_data<EnerStep05)
+ 978   2            {
+ 979   3              fnReadEnergyVoltage(EnerStep05, SetFrequency);
+ 980   3              Power = uiEner_S;
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 17  
+
+ 981   3              fnReadEnergyVoltage(EnerStep13, SetFrequency);
+ 982   3              uiEner_S = (uiEner_S-Power)>>3;
+ 983   3              uiEner_S = Power - (uint)(EnerStep05-SetEnergy_data)*uiEner_S;
+ 984   3            }
+ 985   2            Ener_SA_temp  = (float)uiEner_S;
+ 986   2            Ener_SA_temp = Ener_SA_temp/10.0;
+ 987   2          }
+ 988   1          
+ 989   1          Ener_AB_flag = 1;     //BÂ·
+ 990   1          if (SetEnergy_data==5||SetEnergy_data==13||SetEnergy_data==21||SetEnergy_data==29||SetEnergy_data==37||S
+             -etEnergy_data==45)
+ 991   1          {
+ 992   2            fnReadEnergyVoltage(SetEnergy_data, SetFrequency);
+ 993   2            Ener_SB_temp  = (float)uiEner_S;
+ 994   2            Ener_SB_temp = Ener_SB_temp/10.0;
+ 995   2          }
+ 996   1          else
+ 997   1          {
+ 998   2                    /*2¸ö±äÁ¿¸´ÓÃËµÃ÷*/
+ 999   2                    /*Power   ´æ´¢µÍ¶ËÄÜÁ¿·´À¡µçÑ¹*/
+1000   2                    /*uiEner_S  ´æ´¢¸ß¶ËÄÜÁ¿·´À¡µçÑ¹*/
+1001   2            if (SetEnergy_data>EnerStep05&&SetEnergy_data<EnerStep13)
+1002   2            {
+1003   3              fnReadEnergyVoltage(EnerStep05, SetFrequency);
+1004   3              Power = uiEner_S;
+1005   3              fnReadEnergyVoltage(EnerStep13, SetFrequency);
+1006   3              uiEner_S = (uiEner_S-Power)>>3;
+1007   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep05)*uiEner_S;
+1008   3            }
+1009   2            else if (SetEnergy_data>EnerStep13&&SetEnergy_data<EnerStep21)
+1010   2            {
+1011   3              fnReadEnergyVoltage(EnerStep13, SetFrequency);
+1012   3              Power = uiEner_S;
+1013   3              fnReadEnergyVoltage(EnerStep21, SetFrequency);
+1014   3              uiEner_S = (uiEner_S-Power)>>3;
+1015   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep13)*uiEner_S;
+1016   3            }
+1017   2            else if (SetEnergy_data>EnerStep21&&SetEnergy_data<EnerStep29)
+1018   2            {
+1019   3              fnReadEnergyVoltage(EnerStep21, SetFrequency);
+1020   3              Power = uiEner_S;
+1021   3              fnReadEnergyVoltage(EnerStep29, SetFrequency);
+1022   3              uiEner_S = (uiEner_S-Power)>>3;
+1023   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep21)*uiEner_S;
+1024   3            }
+1025   2            else if (SetEnergy_data>EnerStep29&&SetEnergy_data<EnerStep37)//
+1026   2            {
+1027   3              fnReadEnergyVoltage(EnerStep29, SetFrequency);
+1028   3              Power = uiEner_S;
+1029   3              fnReadEnergyVoltage(EnerStep37, SetFrequency);
+1030   3              uiEner_S = (uiEner_S-Power)>>3;
+1031   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep29)*uiEner_S;
+1032   3            }
+1033   2            else if (SetEnergy_data>EnerStep37&&SetEnergy_data<EnerStep45)//
+1034   2            {
+1035   3              fnReadEnergyVoltage(EnerStep37, SetFrequency);
+1036   3              Power = uiEner_S;
+1037   3              fnReadEnergyVoltage(EnerStep45, SetFrequency);
+1038   3              uiEner_S = (uiEner_S-Power)>>3;
+1039   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep37)*uiEner_S;
+1040   3            }
+1041   2            else if (SetEnergy_data>EnerStep45)//
+C51 COMPILER V9.60.0.0   ENERGYCONTROL                                                     09/30/2026 09:26:26 PAGE 18  
+
+1042   2            {
+1043   3              fnReadEnergyVoltage(EnerStep45, SetFrequency);
+1044   3              Power = uiEner_S;
+1045   3              fnReadEnergyVoltage(EnerStep53, SetFrequency);
+1046   3              uiEner_S = (uiEner_S-Power)>>3;
+1047   3              uiEner_S = Power + (uint)(SetEnergy_data-EnerStep45)*uiEner_S;
+1048   3            }
+1049   2            else if(SetEnergy_data>0&&SetEnergy_data<EnerStep05)
+1050   2            {
+1051   3              fnReadEnergyVoltage(EnerStep05, SetFrequency);
+1052   3              Power = uiEner_S;
+1053   3              fnReadEnergyVoltage(EnerStep13, SetFrequency);
+1054   3              uiEner_S = (uiEner_S-Power)>>3;
+1055   3              uiEner_S = Power - (uint)(EnerStep05-SetEnergy_data)*uiEner_S;
+1056   3            }
+1057   2            Ener_SB_temp  = (float)uiEner_S;
+1058   2            Ener_SB_temp = Ener_SB_temp/10.0;
+1059   2          }
+1060   1          
+1061   1      
+1062   1          
+1063   1      }
+1064          
+1065          
+1066          
+1067          #endif
+1068          
+1069          
+1070          
+1071          
+1072          
+1073          
+1074          
+1075          
+1076          
+1077          
+1078          
+1079          
+1080          
+1081          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   7926    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      17
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

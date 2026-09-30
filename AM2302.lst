@@ -1,0 +1,105 @@
+C51 COMPILER V9.60.0.0   AM2302                                                            09/30/2026 09:26:27 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE AM2302
+OBJECT MODULE PLACED IN AM2302.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\AM2302.C LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXTE
+                    -ND PRINT(.\AM2302.lst) TABS(2) OBJECT(AM2302.obj)
+
+line level    source
+
+   1          #include "include\includes.h"
+   2          
+   3          
+   4          unsigned char U8FLAG;
+   5          
+   6          // DHT11   温湿度读取子程序    : /*   更换DS18B20    20260925  -Zterch   */
+   7          // 读一字节
+   8           unsigned char read_one_byte1()
+   9          {
+  10   1          unsigned char i;
+  11   1          unsigned char bit_test;
+  12   1          static unsigned char dht11_temp;
+  13   1        
+  14   1          for(i=0;i<8;i++)
+  15   1          { 
+  16   2              U8FLAG = 2;
+  17   2              while((!D2302HJ)&&U8FLAG++);
+  18   2              Delay(2);
+  19   2              Delay(2);
+  20   2              //Delay(2);
+  21   2              bit_test = 0;
+  22   2            
+  23   2              if(D2302HJ)
+  24   2                  bit_test =1;
+  25   2              
+  26   2              U8FLAG=2;
+  27   2              while(D2302HJ&&U8FLAG++);
+  28   2              if(U8FLAG==1)break;
+  29   2              dht11_temp <<= 1;
+  30   2              dht11_temp |= bit_test;
+  31   2          }
+  32   1          
+  33   1          return dht11_temp;
+  34   1      }
+  35          
+  36          void  RH_HJ(void)   //室内
+  37          {  
+  38   1          unsigned char temp[4];
+  39   1          unsigned char data_sum;
+  40   1          unsigned char data_sum_temp;
+  41   1        
+  42   1          D2302HJ = 0;//总线拉低
+  43   1          Delay (500);
+  44   1          //总线拉高。延时20US
+  45   1          D2302HJ = 1;
+  46   1          Delay (2);
+  47   1          Delay (2);
+  48   1          Delay (2);
+  49   1          //Delay (2);
+  50   1          //D2302HJ=1;
+  51   1          if(!D2302HJ) 
+  52   1          {
+  53   2              U8FLAG=2;
+  54   2              while((!D2302HJ)&&U8FLAG++);
+C51 COMPILER V9.60.0.0   AM2302                                                            09/30/2026 09:26:27 PAGE 2   
+
+  55   2              U8FLAG=2;
+  56   2              while(D2302HJ&&U8FLAG++);
+  57   2              temp[0]=read_one_byte1();
+  58   2              temp[1]=read_one_byte1();
+  59   2              temp[2]=read_one_byte1();
+  60   2              temp[3]=read_one_byte1();
+  61   2              data_sum=read_one_byte1();
+  62   2              //delayus(20);
+  63   2              //D2302HJ=1;
+  64   2              data_sum_temp=(temp[0]+temp[1]+temp[2]+temp[3]);
+  65   2              if(data_sum==data_sum_temp)
+  66   2              {
+  67   3                  humidity_HJ=temp[0];
+  68   3                  humidity_HJ=humidity_HJ*256+temp[1];
+  69   3                  temperature_HJ=temp[2];
+  70   3                  temperature_HJ=temperature_HJ*256+temp[3];
+  71   3              }   
+  72   2          }     
+  73   1      }
+  74          
+  75          
+  76          
+  77          
+  78          
+  79          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    318    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      2       6
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,1729 @@
+
+#include "include\includes.h"
+
+
+#define max_SetChangVolt_A 800
+#define max_SetChangVolt_B 800
+
+uint  idata SetChangVolt_A = 600;
+uint  idata SetChangVolt_B = 600;
+
+
+bit feedback_volt_flag=0;
+
+
+void test1_6function(void)
+{   
+	  while(1)
+    {
+	  	  if (rinterrupt==rinterrupt_Yes)
+	  	  {  
+	  	  	  rinterrupt = rinterrupt_No;
+	  	  	  switch ( rbuf[8] )
+	  	  	  {
+	  	  	      case 0x50:
+	  	  	  	  {  
+										//对应界面信号测试
+	  	  	  	  	  change_picture(0x08);
+	  	  	  	  	  MF_1_TestQuDong();		
+	  	  	  	  }
+	  	  	  	  break;
+	  	  	  	  case 0x60:
+	  	  	  	  {  
+									  //对应界面故障处理
+	  	  	  	  	  change_picture(0x09);
+	  	  	  	  	  MF_2_TestDianJi();								
+	  	  	  	  }
+	  	  	  	  break;
+	  	  	  	  case 0x70:
+	  	  	  	  {  
+									  //对应界面开环测试
+	  	  	  	  	  change_picture(0x0A);
+	  	  	  	  	  MF_5_KaiHuanGongZuo();
+	  	  	  	  }
+	  	  	  	  break;
+	  	  	  	  case 0x90:
+	  	  	  	  {  
+							  
+	  	  	  	  	  //对应界面反馈系统
+	  	  	  	  	  change_picture(0x0B);
+	  	  	  	  	  MF_6_SheZhiQuXian(); 
+	  	  	  	  }
+	  	  	  	  break;
+	  	  	  	  case 0xA0:
+	  	  	  	  {  
+									  // 历史信息
+	  	  	  	  	  change_picture(14);
+	  	  	  	  	  lishi_info();
+	  	  	  	  }
+	  	  	  	  break;
+	  	  	  	  case 0xB0:
+	  	  	  	  {  		
+									  // 保养修改
+	  	  	  	  	  change_picture(16);
+	  	  	  	  	  baoyang_xiugai();
+	  	  	  	  }
+	  	  	  	  break;
+	  	     }
+	     }
+    }
+}
+
+/*校准流程*/
+
+void MF_1_TestQuDong( void )
+{
+
+	fnShowStatus (); //初始化显示数据
+	Pwm_LD_init();
+	if(Uart_rfinit())
+	{
+		MF_1RFerro();	
+	}
+	while (1)
+	{
+		
+		if (rinterrupt==rinterrupt_Yes)
+		{
+			rinterrupt = rinterrupt_No;
+				if (rbuf[8]==0x51) //开关光闸
+				{
+                   if ( gzall_flag==0 )	   //开
+					{
+						gzall_flag = 1;
+						CWGZ = GZ_Open;
+					}
+					else
+					{
+						gzall_flag = 0;
+						CWGZ = GZ_Close;
+					}
+				}else if(rbuf[8]==0x52){  //预燃与否
+					if( yr_flag==0 )
+					{
+						yr_flag = 1;/*预燃*/
+						CYR_A = YR_Open;/*执行预燃命令*/
+						Delay(50000);	 //500ms
+						CYR_B = YR_Open;
+					}
+					else
+					{
+						yr_flag = 0;/*不预燃*/
+						CYR_A = YR_Close;/*撤销预燃命令*/
+						CYR_B = YR_Close;
+					}
+				}else if(rbuf[8]==0x53){	//开指示调节
+					if(pwm_ld_data==65535)
+					   pwm_ld_data=0;
+					else
+					   pwm_ld_data +=65535/5;
+					Pwm_LD(pwm_ld_data);
+					pwm_ld_data_temp=pwm_ld_data;
+					
+				}else if(rbuf[8]==0x54){	//闪恒指示灯
+					if( fls_flag==0 )
+					{
+						fls_flag = 1;
+						
+					}
+					else
+					{
+						fls_flag = 0;
+						Pwm_LD(pwm_ld_data_temp);
+						
+					}
+				}else if(rbuf[8]==0x55){	//开关继电器
+					if( jdq_flag==0 )	  /*开继电器*/
+					{
+						jdq_flag = 1;
+						CJDQ = JDQ_Open;
+					}
+					else				  /*关继电器*/
+					{
+						jdq_flag = 0;
+						CJDQ = JDQ_Close;
+
+					}
+				}else if(rbuf[8]==0x56){	//开关风扇
+			/*		if(pwm_fs_data==65535)
+					   pwm_fs_data=0;
+					else
+						pwm_fs_data +=65535/5;;
+					Pwm_FS(pwm_fs_data);		*/
+						Alarm(sound3);	// 使用ISD1110报警	 仅响一声
+						data_rf[10]=0;
+						data_rf[11]=50;
+						if(Uart_rfwrite()){
+						  onf_flag = 0;
+						}else {
+						   onf_flag=1;
+						   
+						} 
+						
+					
+				}else if(rbuf[8]==0x57){	//开关警示音
+					if( jsy_flag==0 )	  /*读数据*/
+					{
+						jsy_flag = 1;							            						
+						Alarm(sound3);	// 使用ISD1110报警	 仅响一声
+						if(Uart_rfread()){
+						  onf_flag=0;
+						  jsy_flag = 0;
+						}else {
+						   onf_flag=1;
+						   LCD_rf(); 
+						   
+						}
+						  
+					}
+					else				  /*写数据*/
+					{
+						jsy_flag = 0;
+						Alarm(sound3);	// 使用ISD1110报警	 仅响一声
+						data_rf[10]++;
+						data_rf[11]--;
+						if(Uart_rfwrite()){
+						  onf_flag = 0;
+						}else {
+						   onf_flag=1;
+						   
+						}
+						
+						
+					}
+				}else if(rbuf[8]==0x58){	//返回到选择菜单界面
+				        gzall_flag = 0;
+						CWGZ = GZ_Close;
+						yr_flag = 0;/*不预燃*/
+				        CYR_A = YR_Close;/*撤销预燃命令*/
+						CYR_B = YR_Close;
+						
+
+						jdq_flag = 0;
+						CJDQ = JDQ_Close;
+						jsy_flag = 0;
+						change_picture(0x07);
+				        break;	
+				}
+					
+				MF_1fnshow();	      //需要显示上述按键的功能信息	
+		}
+		if(P6status!=P6||P5status!=P5||P4status!=P4){
+	    	fnShowStatus ();
+    	}
+		if(am2302flg){
+		  RH_HJ();
+		  am2302flg=0;
+		  MF_Display_2302();
+		}
+					 
+	}
+}
+
+					
+
+
+/*电机检测、设置信号屏蔽字、显示反馈与否、显示脉冲数能量值*/
+void MF_2_TestDianJi( void )
+{
+    //步进电机
+    uint ddd=0;
+	Flag_Flow =  Flag_JiaoZhun;
+//	uchar MF_2_Frequency=5;	
+	one_orflag=1;	
+	SetFrequency = 5;
+	SetFrequency_last = 5;
+	Display_dianji_Fre( 0 );
+	//故障屏蔽信号
+	read_data(0xa0,Address_ucMaskByte,qushuzu,1);
+    Delay( 1000 );
+    ucMaskByte = qushuzu[0];
+    fnShowMaskByte();
+	//反馈与否、显示脉冲数能量值
+
+	/*读取显示能量反馈值、充电电压标志*/
+	read_data(0xa0,Address_ShowFeedBackVoltage,qushuzu,1);
+	Delay( 1000 );
+	Flag_ShowFeedBack = (bit)qushuzu[0];
+	Display_feedback_volt();
+	 
+
+	while(1){
+		
+		if (rinterrupt==rinterrupt_Yes)
+		{
+			rinterrupt = rinterrupt_No;
+				if (rbuf[8]==0x61)    /*调整电机驱动频率*/
+				{
+				  if(SetFrequency==0)		//从5hz开始
+				    SetFrequency=5;
+
+				  if(SetFrequency==5){
+					fnSlowStartupDrive();
+				  }else{
+				    fnGenJuShangCiPinLvTiaoZheng (SetFrequency);
+				  }				  
+				  Display_dianji_Fre(SetFrequency);
+				  if(SetFrequency>=20)
+				  	SetFrequency +=2;
+				  else 
+				    SetFrequency++;
+
+				  if(SetFrequency>30)
+				     SetFrequency=3;				  
+				  
+				}else if(rbuf[8]==0x62){		 	   /*启动电机驱动频率*/
+				  fnSlowStartupDrive();
+				  SetFrequency=5;
+				  Display_dianji_Fre(SetFrequency);
+				  SetFrequency++;
+				}else if(rbuf[8]==0x63){				  /*清零电机驱动频率*/
+				    PCA0CPM0  = 0x00;			            //停止计数器
+					SetFrequency=0;
+					Display_dianji_Fre(SetFrequency);
+				}else if(rbuf[8]==0x64){				  /*测量电机运转周期*/
+					ddd=fnMeasureCycle(Adown);
+			        LCD_CycleCount(ddd);
+				}else if(rbuf[8]==0x85){				  //返回到选择菜单界面
+					PCA0CPM0  = 0x00;		            //停止电机
+					change_picture(0x07);
+				    break;
+				}
+				/*设置信号屏蔽字*/
+				else if (rbuf[8]==0x68)
+				{
+           			MB_SLQSL_AB = !MB_SLQSL_AB;
+				}else if(rbuf[8]==0x69){
+					 MB_SYM=!MB_SYM;
+				}else if(rbuf[8]==0x6a){
+					 MB_ST_YC=!MB_ST_YC;
+				}else if(rbuf[8]==0x6b){
+					 MB_SYR_AB=!MB_SYR_AB;
+				}else if(rbuf[8]==0x6c){
+					 MB_SDY_AB=!MB_SDY_AB;
+				}else if(rbuf[8]==0x6d){
+					 MB_SGZ_ABW=!MB_SGZ_ABW;
+				}else if(rbuf[8]==0x6e){
+					 MB_SLS=!MB_SLS;
+				}else if(rbuf[8]==0x6f){
+					 MB_SGX=!MB_SGX;
+				}
+				/*显示反馈与否、显示脉冲数能量值*/
+				else if(rbuf[8]==0x65){
+					if(feedback_volt_flag==0){
+						feedback_volt_flag=1;
+						Flag_ShowFeedBack=1;
+					}else{
+						feedback_volt_flag=0;
+						Flag_ShowFeedBack=0;
+					}
+					saveshuzu[0]=(uchar)Flag_ShowFeedBack;
+					write_data(0xa0,Address_ShowFeedBackVoltage,saveshuzu,1);
+					Delay( 1000 );
+					Display_feedback_volt();
+				}	
+				if((rbuf[8]>=0x68)&&(rbuf[8]<=0x6f)){
+				  saveshuzu[0] = ucMaskByte;                           //save
+				  write_data(0xa0,Address_ucMaskByte,saveshuzu,1);
+				  Delay( 1000 );  
+				  fnShowMaskByte();
+				}							   
+						
+		}
+		
+	}	
+}
+
+
+/*开环控制*/
+void MF_5_KaiHuanGongZuo (void)
+{
+	uchar Status_JiaoZhun=1;
+	/*读取显示能量反馈值、充电电压标志，为了控制首腔次腔末腔的权限*/
+	read_data(0xa0,Address_ShowFeedBackVoltage,qushuzu,1);
+	Delay( 1000 );
+	Flag_ShowFeedBack = (bit)qushuzu[0];
+
+	/*读取腔选标志*/
+	read_data(0xa0,Address_ucChoiceABlight,qushuzu,1);
+	Delay( 1000 );
+	ucChoiceABlight = qushuzu[0];    
+
+     one_orflag = 0;         //多腔工作
+	 jdq_flag = 0;		 //继电器关闭标志
+
+	    fnSlowStartupDrive();  //启动电机
+	    //检测电机周期
+	    fnDianJiCheckAdjust(5);
+		SetFrequency = 5;
+		SetFrequency_last = 5;
+		
+		/* 操作面板初始化*/
+		MF_5Display_Frequency( SetFrequency );
+		SetChangVolt_A = 600;
+		SetChangVolt_B = 600;
+      Display_SetChangVolt_A( SetChangVolt_A );
+	  Display_SetChangVolt_B( SetChangVolt_B );
+		while (1)
+		{
+			
+		  switch(Status_JiaoZhun){
+		  	case 1: 
+		  		Status_JiaoZhun = DaiJi_JiaoZhun();
+		  	  break;
+		  	case 2: 
+		  		Status_JiaoZhun = ZhunBei_JiaoZhun();
+		  	  break;
+		  	default:
+			    Status_JiaoZhun = 1;
+		      break;
+		  }
+		  if(Status_JiaoZhun==3){
+		      change_picture(7);
+		      break;
+		  }
+		}
+}
+
+
+
+
+
+
+
+
+
+uchar DaiJi_JiaoZhun(void)
+{
+	
+
+/*设参初始化*/	
+
+
+	while(1)
+	{  
+	  if ( biTestDianji==TestDianji )
+		{
+			if ( uiT2OverFlows>20 )
+			{
+				uiT2OverFlows = 0x00;
+				Delay_1s();
+				Delay_1s();
+				/*这里应该增加一个计数值，多次出现这一故障报错*/
+			
+			}   
+		}
+		else
+		{
+			/*不加入代码*/
+		}
+
+		if(am2302flg){
+		  		RH_HJ();
+		  		am2302flg=0;
+		  		MF_Display_2302();
+		}
+
+
+	    if (rinterrupt==rinterrupt_Yes)
+		{
+			rinterrupt = rinterrupt_No;
+			switch ( rbuf[8] )
+			{
+				case 0x72:/* 开关继电器 */
+				{
+					if( jdq_flag==0 )	  /*开继电器*/
+					{
+						jdq_flag = 1;
+						CJDQ = JDQ_Open;
+					}
+					else				  /*关继电器*/
+					{
+						jdq_flag = 0;
+						CJDQ = JDQ_Close;
+					}
+					fnshowDaiJi_JiaoZhun();
+				}
+				break;
+				case 0x71:/* 返回  可能需要修改更多参数 */
+				{
+					    gzall_flag = 0;
+						CWGZ = GZ_Close;
+						yra_flag = 0;/*不预燃*/
+				        CYR_A = YR_Close;/*撤销预燃命令*/
+						yrb_flag = 0;/*不预燃*/
+						CYR_B = YR_Close;
+						
+
+						jdq_flag = 0;
+						CJDQ = JDQ_Close;
+						jsy_flag = 0;
+						PCA0CPM0  = 0x00;	//停止电机
+					return 3;    /*退出开环工作模式*/
+				}
+				break;
+				case 0x73:/*设置频率+ */
+				{
+		     if(one_orflag){
+					if(double_pluse_flag){
+						if(SetFrequency<15)
+						{                              
+							SetFrequency ++;
+						}
+						else
+						{                             /*频率加越界*/
+//							Alarm(sound3);
+						}
+					}else{						
+						if(SetFrequency<20)
+						{                              
+							SetFrequency ++;
+						}else if(SetFrequency<30)
+						{                               /*20~30hz 频率加2*/
+							SetFrequency +=2;
+		
+						}
+						else
+						{                             /*频率加越界*/
+//							Alarm(sound3);
+						}
+				  }
+
+				  }else{
+						if(double_pluse_flag){
+							 if( SetFrequency<6 )
+							{
+								SetFrequency++;				/*5~11hz 频率加1*/
+
+							}
+							 else if(SetFrequency<30)
+							{                               /*12~40hz 频率加2*/
+								SetFrequency +=2;
+			
+							}
+							else
+							{                             /*频率加越界*/
+//								Alarm(sound3);
+							}
+						}else{
+							 if( SetFrequency<14 )
+							{
+								SetFrequency++;				/*5~11hz 频率加1*/
+
+							}
+							 else if(SetFrequency<40)
+							{                               /*12~40hz 频率加2*/
+								SetFrequency +=2;
+			
+							}else if(SetFrequency<60)
+							{                               /*40~60hz 频率加4*/
+								SetFrequency +=4;
+			
+							}
+							else
+							{                             /*频率加越界*/
+//								Alarm(sound3);
+							}
+						}
+					 
+							
+			    }
+			      MF_5Display_Frequency(SetFrequency);
+
+									
+				}
+				break;
+
+				case 0x74:/*设置频率- */
+				{
+				  if(one_orflag){
+						if(double_pluse_flag){
+							if(SetFrequency>3)
+							{                             
+								SetFrequency --;
+							}
+							else
+							{                             /*频率加越界*/
+//								Alarm(sound3);
+							}
+
+						}else{
+							if(SetFrequency>20)
+							{                              
+								SetFrequency -=2;
+							}else if(SetFrequency>5)
+							{                             
+								SetFrequency --;
+							}
+							else
+							{                             /*频率加越界*/
+//								Alarm(sound3);
+							}
+
+						}
+
+				  }else{
+						if(double_pluse_flag){
+							if(SetFrequency>6)
+							{
+								SetFrequency -=2;				/*12~40hz 频率减2*/
+
+							}
+							else if(SetFrequency>3)
+							{                              /*5~11hz 频率减1*/
+								SetFrequency --;
+							}
+							else
+							{                             /*频率减越界*/
+//								Alarm(sound3);
+							}
+							
+						}else{
+							if(SetFrequency>40)
+							{
+								SetFrequency -=4;				/*40~60hz 频率减4*/
+
+							}
+							else if(SetFrequency>14)
+							{
+								SetFrequency -=2;				/*12~40hz 频率减2*/
+
+							}
+							else if(SetFrequency>5)
+							{                              /*5~11hz 频率减1*/
+								SetFrequency --;
+							}
+							else
+							{                             /*频率减越界*/
+//								Alarm(sound3);
+							}
+							
+						}
+
+				  }
+				   MF_5Display_Frequency(SetFrequency);
+	
+				}
+				break;
+
+				case 0x75:/*设置A路电压+ */
+				{
+						if( SetChangVolt_A<max_SetChangVolt_A)
+						{
+							SetChangVolt_A +=5;
+						}
+						else
+						{
+//							Alarm(sound3);
+						}
+						Display_SetChangVolt_A( SetChangVolt_A );				
+				}
+				break;
+
+				case 0x76:/*设置A路电压- */
+				{
+						if( SetChangVolt_A>0 )
+						{
+							SetChangVolt_A -=5;
+						}
+						else
+						{
+//							Alarm(sound3);
+						}
+						Display_SetChangVolt_A( SetChangVolt_A );
+					
+				}
+				break;
+				
+				case 0x77:/*设置B路电压+ */
+				{
+
+						if( SetChangVolt_B<max_SetChangVolt_B )
+						{
+							SetChangVolt_B +=5;
+						}
+						else
+						{
+//							Alarm(sound3);
+						}
+						Display_SetChangVolt_B( SetChangVolt_B );
+					
+				}
+				break;
+
+				case 0x78:/*设置B路电压- */
+				{
+
+						if( SetChangVolt_B>0  )
+						{
+							SetChangVolt_B -=5;
+						}
+						else
+						{
+//							Alarm(sound3);
+						}
+						Display_SetChangVolt_B( SetChangVolt_B );
+					
+				}
+				break;							
+
+				case 0x79:/* 调节指示灯  */
+				{
+                   
+					if(pwm_ld_data==65535)
+					   pwm_ld_data=0;
+					else
+					   pwm_ld_data +=65535/5;
+					Pwm_LD(pwm_ld_data);
+					pwm_ld_data_temp=pwm_ld_data;
+			
+					fnshowDaiJi_JiaoZhun();
+	    	    }
+				break;
+
+				case 0x7a:/*闪恒指示灯*/
+				{
+// 					if( fls_flag==0 )
+// 					{
+// 						fls_flag = 1;
+// 						
+// 					}
+// 					else
+// 					{
+// 						fls_flag = 0;
+// 						Pwm_LD(pwm_ld_data_temp);
+// 						
+// 					}
+					Pulse_jiange +=2;
+					if(Pulse_jiange>60)
+					   Pulse_jiange=20;
+					fnshowDaiJi_JiaoZhun();
+				}
+				break;
+				case 0x7b:/* 开关光闸 */
+				{
+					if ( gzall_flag==0 )	   //开
+					{
+						gzall_flag = 1;
+						CWGZ = GZ_Open;
+					}
+					else
+					{
+						gzall_flag = 0;
+						CWGZ = GZ_Close;
+					}
+					fnshowDaiJi_JiaoZhun();
+				}
+				break;
+
+				case 0x7c:/* 12hz以上仅单路或者多路同时打光  */
+				{
+					one_orflag = !one_orflag;		 // one_orflag为1时单腔工作 
+					SetFrequency=5;
+					fnshowDaiJi_JiaoZhun();
+					MF_5Display_Frequency(SetFrequency);
+	    	    }
+				break;
+				case 0x7d:/* A路预燃  */
+				{
+                   if( yra_flag==0 )
+					{
+						yra_flag = 1;/*预燃*/
+						CYR_A = YR_Open;/*执行预燃命令*/
+					}
+					else
+					{
+						yra_flag = 0;/*不预燃*/
+						CYR_A = YR_Close;/*撤销预燃命令*/
+					}
+					fnshowDaiJi_JiaoZhun();
+//					Alarm(sound2);
+	    	    }
+				break;
+				case 0x7f:/* B路预燃  */
+				{
+                   if( yrb_flag==0 )
+					{
+						yrb_flag = 1;/*预燃*/
+						CYR_B = YR_Open;/*执行预燃命令*/
+					}
+					else
+					{
+						yrb_flag = 0;/*不预燃*/
+						CYR_B = YR_Close;/*撤销预燃命令*/
+					}
+					fnshowDaiJi_JiaoZhun();
+//					Alarm(sound2);
+	    	    }
+				break;
+
+				case 0x7e:/* 优先使用的腔 */
+				{
+				 if(Flag_ShowFeedBack==Show_Enable){  //若闭环能显示反馈值和电压，则腔顺序可改，功能限制
+				   	if (ucChoiceABlight==ALight)
+					   ucChoiceABlight= BLight;
+					else if (ucChoiceABlight==BLight)
+					   ucChoiceABlight= ALight;
+				    
+				   	saveshuzu[0] = ucChoiceABlight;                           //save
+				    write_data(0xa0,Address_ucChoiceABlight,saveshuzu,1);
+				    Delay( 1000 );	
+				  }				 
+					fnshowDaiJi_JiaoZhun();
+				}
+				break;
+
+				case 0x80:/* 首脉宽  */
+				{
+				    Pulse_time++;
+					if(Pulse_time>20)
+					   Pulse_time=4;
+					fnshowDaiJi_JiaoZhun();
+//					Alarm(sound2);
+	    	    }
+				break;
+				
+				case 0x83:/* 单双脉冲切换 */
+				{
+					if( double_pluse_flag==0 )
+					{
+						double_pluse_flag = 1;						
+					}
+					else
+					{
+						double_pluse_flag = 0;					
+					}
+					fnshowDaiJi_JiaoZhun();
+//					Alarm(sound2);
+	    	  }
+				break;
+						
+				case 0x84:/* 次脉宽  */
+				{
+				    Pulse_time2++;
+					if(Pulse_time2>16)
+					   Pulse_time2=4;
+					fnshowDaiJi_JiaoZhun();
+//					Alarm(sound2);
+	    	    }
+				break;
+
+				case 0x82:/*准备*/
+				{
+					
+				    fnGenJuShangCiPinLvTiaoZheng (SetFrequency);
+					//测量电机周期，进行微调
+					fnDianJiCheckAdjust(SetFrequency);
+
+					/*计算A  B  C路各自的充电电压值*/
+				  	
+				    uiChangVolt_A = SetChangVolt_A;
+					uiChangVolt_B = SetChangVolt_B;
+
+		//			fnshowqiang_JiaoZhun();    //显示工作的腔
+					Delay_1s();			
+					fnshowDaiJi_JiaoZhun();
+					return 2;    /*退出待机状态，进入准备状态*/
+			
+			  }
+			  break;
+              default:
+		        break;			
+			}
+		}
+	}
+	
+}
+
+uchar ZhunBei_JiaoZhun(void)
+{
+
+	/*用MAXSetFrequency  代替uchar key_number;*/	
+	#define Dischanging_Yes 1
+	#define Dischanging_No 0
+	bit biDischanging = Dischanging_No;
+
+	fnSelectTimer2_Fun2_first();	   //电机停转检测
+
+while(1)
+    {
+    if ( biDischanging==Dischanging_No )
+    	{if (rinterrupt==rinterrupt_Yes)
+		  {  
+			rinterrupt = rinterrupt_No;
+			switch ( rbuf[8] )
+			{
+			   case 0x71:/* 返回  可能需要修改更多参数 */
+				{
+				    CWGZ = GZ_Close;
+				        CYR_A = YR_Close;/*撤销预燃命令*/
+						CYR_B = YR_Close;
+						CJDQ = JDQ_Close;
+						jsy_flag = 0;
+						PCA0CPM0  = 0x00;	//停止电机
+					return 3;    /*退出开环工作模式*/
+				}
+				break;
+				case 0x81:/* 待机 */
+				{
+					fnshowDaiJi_JiaoZhun();
+					return 1;
+				}
+				break;
+				default:/*按其它键无效*/
+				{
+//					Alarm (sound3);
+				}
+				break;
+				
+				
+			}
+		  }
+
+    	}
+	 if ( biDischanging==Dischanging_No )
+		{
+			/*检测流程、水温检测*/
+			if ( biTestDianji==TestDianji )
+			{
+				if ( uiT2OverFlows>20 )
+				{
+					uiT2OverFlows = 0x00;
+					Delay_1s();
+					Delay_1s();
+
+				}
+			}
+			else
+			{
+				/*不加入代码*/
+			}
+
+			if(am2302flg){
+		  		RH_HJ();
+		  		am2302flg=0;
+		  		MF_Display_2302();
+			}
+			
+// 			if(MB_SLQSL_AB==Check_Enable)
+// 	{
+// 		P5status = P5;
+// 		if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+// 		{
+// 			Delay_100us();
+// 			P5status = P5;
+// 			if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+// 			{
+// 				Delay_100us();
+// 				P5status = P5;
+// 				if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+// 				{
+
+// 					fnshowshuiliu_JiaoZhun();
+// 					while (1)
+// 					{
+// 						Alarm(sound3);
+// 						Delay_5s();
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}		    
+
+// 			CNL=0; 
+// 			Delay (200);
+// 			Ener_S_first=0.117*(float)EnerVoltJZ();   //数据格式为 百十个
+// 			CNL=1;   //将反馈电压泄放 清零
+// 			MF_5Display_FeedBackEnergyVoltA((uint)Ener_S_first);
+// 			Delay (20000);
+
+
+			/*刚刚踩下脚踏开关*/
+			P4status=P4;
+			P6status=P6;
+//			if ( SJTA0==1 && SYR_A==SYR_keep && SYR_B==SYR_keep)
+			if ( SJTA0==1 )
+			{
+				/*LCD[治疗中----]*/
+			    fnshowzhiliao_JiaoZhun( );
+				/*设置当前为充放电状态*/
+				biDischanging = Dischanging_Yes;
+				/*初始化充放电*/
+				
+				if(one_orflag){							   //单腔工作5~30hz
+				   if(ucChoiceABlight==ALight){
+						fnDischangVolt_OutPut_uiA(uiChangVolt_A);
+					 	CA = 1;
+						CB = 0;
+						Select_Laser=ALight;
+				  	}else if(ucChoiceABlight==BLight){
+						fnDischangVolt_OutPut_uiB(uiChangVolt_B);
+					 	CA = 0;
+						CB = 1;
+						Select_Laser=BLight;
+				  	}
+				}else{
+						if( double_pluse_flag )
+						{
+							if( SetFrequency>=3 && SetFrequency<6 ){
+							if(ucChoiceABlight==ALight){
+							fnDischangVolt_OutPut_uiA(uiChangVolt_A);
+							CA = 1;
+							CB = 0;
+							Select_Laser=ALight;
+								}else if(ucChoiceABlight==BLight){
+							fnDischangVolt_OutPut_uiB(uiChangVolt_B);
+							CA = 0;
+							CB = 1;
+							Select_Laser=BLight;
+								}
+							}else if ( SetFrequency>=6 && SetFrequency<=30 ){
+							
+						/*高频放电每次都从通光位置开始，即A  先放电*/
+							CA = 1;
+								CB = 0;
+							Select_Laser=ALight;
+							fnDischangVolt_OutPut_uiA( uiChangVolt_A );
+							fnDischangVolt_OutPut_uiB( uiChangVolt_B );
+							}
+						
+						}
+						else
+						{
+							if( SetFrequency>=5 && SetFrequency<14 ){
+							if(ucChoiceABlight==ALight){
+							fnDischangVolt_OutPut_uiA(uiChangVolt_A);
+							CA = 1;
+							CB = 0;
+							Select_Laser=ALight;
+								}else if(ucChoiceABlight==BLight){
+							fnDischangVolt_OutPut_uiB(uiChangVolt_B);
+							CA = 0;
+							CB = 1;
+							Select_Laser=BLight;
+								}
+							}else if ( SetFrequency>=14 && SetFrequency<=60 ){
+							
+						/*高频放电每次都从通光位置开始，即A  先放电*/
+							CA = 1;
+								CB = 0;
+							Select_Laser=ALight;
+							fnDischangVolt_OutPut_uiA( uiChangVolt_A );
+							fnDischangVolt_OutPut_uiB( uiChangVolt_B );
+							}
+					
+						}
+				}
+				
+					ucDischangingDianJi_T2overflows = 0x00;
+
+					CCDFD=1;  //允许充电电源工作
+					PULSE = 0;
+					//启动边沿捕获放电
+					biChoiceT2Fun = T2Fun1;
+					capture = T2SpringDischarge_DingWei;
+					T2CON = 0x09;/*捕获*/
+					ET2 = 1;
+					TR2 = 1;
+					EXF2 = 0;	  //很重要的清除边沿中断标志位
+					TF2 = 0;
+
+			}
+		}
+       else if ( biDischanging==Dischanging_Yes )
+			{
+				
+				count1ms=count50us/20;
+				if ( count1ms>=1&&count1ms<=2)
+				{
+				  if(onecheck_flag==1){
+					onecheck_flag=0;
+
+					Ener_S_first=0.117*(float)EnerVoltJZ();   //数据格式为 百十个
+					CNL=1;   //将反馈电压泄放 清零
+
+// 					if(detect_flag){
+// 					  detect_flag=0;
+// 					  if(Select_Laser==ALight){								       
+// 					    MF_Display_detectA();//显示A路监测电压
+// 			          }else if(Select_Laser == BLight){			       
+// 					    MF_Display_detectB();//显示B路监测电压				
+// 			          }
+// 					}
+
+				   }
+				  
+				}else if ( count1ms>=4&&count1ms<=5)
+				{
+					if( double_pluse_flag )
+					{
+							Ener_S_second=0.117*(float)EnerVoltJZ();   //数据格式为 百十个
+							Ener_S=Ener_S_first+Ener_S_second;
+							CNL=1;   //将反馈电压泄放 清零
+					}else{
+							Ener_S=Ener_S_first;
+					}
+						/*AD采样--刚刚放完电的激光能量值*/
+				 if(Select_Laser==ALight){								       
+					  MF_5Display_FeedBackEnergyVoltA((uint)Ener_S);//显示能量反馈的电压值 此函数执行需要1.3ms
+					}else if(Select_Laser == BLight){			       
+						MF_5Display_FeedBackEnergyVoltB((uint)Ener_S);				
+					 }
+					
+					ET0 = 0;
+		      TR0 = 0;/*关闭放电及能量反馈计时*/
+
+					TR2 = 1;  //开启定时器2
+					ET2 = 1;
+					EXEN2=1;			//允许引脚捕获功能	
+					EXF2 = 0;	  //很重要的清除边沿中断标志位
+					TF2 = 0;
+
+					count50us=0;			  //放电计时清零
+
+					if(one_orflag==0)	  //切换放电抢
+					{	 
+						if( double_pluse_flag )
+						{
+							if(SetFrequency>=6)			   /*14-40hz 三路工作*/
+							{
+								if(Select_Laser == ALight){
+									CA = 0;
+									CB = 1;
+									Select_Laser=BLight;
+								}else if(Select_Laser == BLight){
+									CA = 1;
+									CB = 0;
+									Select_Laser=ALight;
+								}
+							}
+						}else{
+							if(SetFrequency>=14)			   /*14-40hz 三路工作*/
+							{
+								if(Select_Laser == ALight){
+									CA = 0;
+									CB = 1;
+									Select_Laser=BLight;
+								}else if(Select_Laser == BLight){
+									CA = 1;
+									CB = 0;
+									Select_Laser=ALight;
+								}
+							}
+						}
+							
+					  }
+				}
+				else
+				{
+
+				Check_Dischanging_1040();
+
+					P4status=P4;
+					/*刚刚抬起脚踏开关*/
+					if ( SJTA0==0 )
+					{	
+						/*设置变量停止充放电*/
+						PULSE = 0;
+						CA = 1;
+						CB = 0;
+						CCDFD=0;  //禁止充电电源工作
+						TR0 = 0;
+				      	ET0 = 0;/*停止充放电中断*/
+						TR2 = 0;
+						ET2 = 0;/*停止充放电中断*/
+						/*标志复位*/
+						biDischanging = Dischanging_No;
+						/*充电电压归零*/
+						fnDischangVolt_OutPut_uiA(0);
+						fnDischangVolt_OutPut_uiB(0);
+						/*LCD[激光准备发射----]*/
+						fnshowzhiliao_JiaoZhun();
+						CLAMP=0;
+						Clamp_flag=0;
+						
+
+					}
+				}	
+				
+			}
+	   
+    }
+}
+
+
+
+
+
+
+
+/*设置曲线*/
+void MF_6_SheZhiQuXian (void)
+{
+	bool step=1;
+	/*初始化面板*/
+	/*8Hz*/
+	double_pluse_flag = 0;	//单脉冲
+	Ener_AB_flag=0;         //A路
+	long_short_pluse_flag=0; //短脉冲
+	LCDqudong6_double_only();
+	LCDqudong6_AorB();
+	LCDqudong6_LorS();
+	
+	SetFrequency = 8;
+	LCDqudong6_pinlv();
+	/*0.5J*/
+	SetEnergy_left = 5;
+	LCDqudong6_nengliang();
+	                                   
+	/*读取、显示该工作点的能量电压目标值*/
+	fnReadEnergyVoltage( SetEnergy_left, SetFrequency );
+	//Display_FeedBackEnergyVolt( uiEner_S*10 );
+
+	LCDqudong6_fankui();
+	
+	while(1)
+	{ if (rinterrupt==rinterrupt_Yes)
+		{  
+			rinterrupt = rinterrupt_No;
+
+			 if(rbuf[8]==0x91)
+				{  
+          if( double_pluse_flag)
+					{
+						if (SetFrequency==4)
+						{
+							SetFrequency=14;
+						}
+						else if (SetFrequency==14)
+						{
+							SetFrequency=20;
+						}
+						else if (SetFrequency==20)
+						{
+							SetFrequency=4;
+						}
+						else
+						{
+							SetFrequency=4;
+						}	
+						
+					}
+					else
+					{
+						if (SetFrequency==8)
+						{
+							SetFrequency=10;
+						}
+						else if (SetFrequency==10)
+						{
+							SetFrequency=24;
+						}
+						else if (SetFrequency==24)
+						{
+							SetFrequency=99;
+						}
+						else if (SetFrequency==99)
+						{
+							SetFrequency=8;
+						}
+						else
+						{
+							SetFrequency=8;
+						}	
+				
+					}
+					LCDqudong6_pinlv();
+					fnReadEnergyVoltage( SetEnergy_left, SetFrequency );
+					LCDqudong6_fankui();
+										
+									
+				}
+				else if(rbuf[8]==0x92)
+				{  
+					if( double_pluse_flag)
+					{
+						if (SetEnergy_left==EnerStep05)
+						{
+							SetEnergy_left = EnerStep13;
+						}
+						else if (SetEnergy_left==EnerStep13)
+						{
+							SetEnergy_left = EnerStep21;
+						}
+						else if (SetEnergy_left==EnerStep21)
+						{
+							SetEnergy_left = EnerStep29;
+						}
+						else if (SetEnergy_left==EnerStep29)
+						{
+							SetEnergy_left = EnerStep37;
+						}
+						else if (SetEnergy_left==EnerStep37)
+						{
+							SetEnergy_left = EnerStep05;
+						}
+						else
+						{
+							SetEnergy_left = EnerStep05;
+						}
+						
+					}else{
+						if (SetEnergy_left==EnerStep05)
+						{
+							SetEnergy_left = EnerStep13;
+						}
+						else if (SetEnergy_left==EnerStep13)
+						{
+							SetEnergy_left = EnerStep21;
+						}
+						else if (SetEnergy_left==EnerStep21)
+						{
+							SetEnergy_left = EnerStep29;
+						}
+						else if (SetEnergy_left==EnerStep29)
+						{
+							SetEnergy_left = EnerStep37;
+						}
+						else if (SetEnergy_left==EnerStep37)
+						{
+							SetEnergy_left = EnerStep45;
+						}
+						else if (SetEnergy_left==EnerStep45)
+						{
+							SetEnergy_left = EnerStep53;
+						}
+						else if (SetEnergy_left==EnerStep53)
+						{
+							SetEnergy_left = EnerStep05;
+						}
+						else
+						{
+							SetEnergy_left = EnerStep05;
+						}
+						
+					}
+					LCDqudong6_nengliang();
+					fnReadEnergyVoltage( SetEnergy_left, SetFrequency );
+					LCDqudong6_fankui();
+									
+				}
+				else if(rbuf[8]==0x93)
+				{  
+				  if(step==1)
+                  {
+				    uiEner_S++;
+				    if(uiEner_S>1000)
+						uiEner_S=1000;
+				  }
+				  else
+					{
+					 uiEner_S+=10;
+				     if(uiEner_S>1000)
+						uiEner_S=1000;
+					}
+					LCDqudong6_fankui();
+					LCDqudong6_unsaved();										
+									
+				}
+			   else if(rbuf[8]==0x94)
+				{  
+                   if(step==1)
+                  {
+				    uiEner_S--;
+				    if(uiEner_S<10)
+						uiEner_S=10;
+				  }
+				  else
+					{
+					  uiEner_S-=10;
+				      if(uiEner_S<10)
+						uiEner_S=10;
+					}
+					LCDqudong6_fankui();
+					LCDqudong6_unsaved();
+					
+									
+				}
+				else if(rbuf[8]==0x96)
+				{  				   
+					fnWriteEnergyVoltage(SetEnergy_left, SetFrequency);
+					LCDqudong6_saved();
+									
+				}
+				else if(rbuf[8]==0x97)
+				{  
+
+					change_picture(0x07);
+					break;
+											
+				}
+				else if(rbuf[8]==0x95)
+				{  
+
+					if(step==1)
+					{	
+						step=0;
+						
+					}
+					else
+					{
+						step=1;
+						
+					}
+				}
+				else if(rbuf[8]==0x98)
+				{  
+
+					if( double_pluse_flag==0 )
+					{
+						double_pluse_flag = 1;	//双
+						SetFrequency=4;
+						SetEnergy_left = EnerStep05;
+					}
+					else
+					{
+						double_pluse_flag = 0;			//单脉冲
+						SetFrequency=8;
+						SetEnergy_left = EnerStep05;
+					}
+					LCDqudong6_pinlv();
+					LCDqudong6_nengliang();
+					fnReadEnergyVoltage( SetEnergy_left, SetFrequency );
+					LCDqudong6_fankui();					
+					LCDqudong6_double_only();						
+				}
+				else if(rbuf[8]==0x99)
+				{ 
+					if( Ener_AB_flag==0 )
+					{
+						Ener_AB_flag = 1;	    //B路
+					}
+					else
+					{
+						Ener_AB_flag = 0;			 //A路
+					}
+					fnReadEnergyVoltage( SetEnergy_left, SetFrequency );
+					LCDqudong6_fankui();			   
+					LCDqudong6_AorB();
+				}
+				else if(rbuf[8]==0x9A)
+				{ 
+					if( long_short_pluse_flag==0 )
+					{
+						long_short_pluse_flag = 1;	    //长脉冲
+					}
+					else
+					{
+						long_short_pluse_flag = 0;			 //短
+					}
+					fnReadEnergyVoltage( SetEnergy_left, SetFrequency );
+					LCDqudong6_fankui();			   
+					LCDqudong6_LorS();
+				}
+					
+			}		
+	}
+}
+
+void lishi_info()
+{
+   uchar mm,JJ;
+   uchar work_info_jishu_temp,work_info_yeshu,work_info_yeshu_temp;
+   	/*读取总脉冲，用户型*/
+	TotalPulse_U = 0;
+		read_data(0xa0,Address_TP_U_HH,qushuzu,1);
+	Delay( 1000 );
+	TotalPulse_U = (ulong)qushuzu[0]*16777216 + TotalPulse_U;//ys+
+	read_data(0xa0,Address_TP_U_HH+1,qushuzu,1);
+	Delay( 1000 );
+	TotalPulse_U = (ulong)qushuzu[0]*65536 + TotalPulse_U;
+	read_data(0xa0,Address_TP_U_HH+2,qushuzu,1);
+	Delay( 1000 );
+	TotalPulse_U = (ulong)qushuzu[0]*256 + TotalPulse_U;
+  read_data(0xa0,Address_TP_U_HH+3,qushuzu,1);
+  Delay( 1000 );
+	TotalPulse_U = (ulong)qushuzu[0] + TotalPulse_U;
+       if(TotalPulse_U>=TP_U_AutoClear)
+	{
+		TotalPulse_U=0;	  
+	}
+
+	/*读取总能量，用户型*/
+	TotalJoule_U= 0;
+	 read_data(0xa0,Address_TJ_U_HH,qushuzu,1);
+  Delay( 1000 );
+	TotalJoule_U = (ulong)qushuzu[0]*16777216 + TotalJoule_U;//ys+
+  read_data(0xa0,Address_TJ_U_HH+1,qushuzu,1);
+  Delay( 1000 );
+	TotalJoule_U = (ulong)qushuzu[0]*65536 + TotalJoule_U;
+	read_data(0xa0,Address_TJ_U_HH+2,qushuzu,1);
+	Delay( 1000 );
+	TotalJoule_U = (ulong)qushuzu[0]*256 + TotalJoule_U;
+	read_data(0xa0,Address_TJ_U_HH+3,qushuzu,1);
+	Delay( 1000 );
+	TotalJoule_U = (ulong)qushuzu[0] + TotalJoule_U;
+       if (TotalPulse_U==0)
+	{
+		TotalJoule_U=0;
+	}
+   //显示总脉冲 总能量
+   fn_TotalPulseJoule();
+
+   //读取工作信息存储总数
+	read_data(0xa0,Address_work_info_state_jishu,qushuzu,1);
+	Delay( 1000 );
+	work_info_jishu = qushuzu[0];
+
+	//读取工作信息存储位置
+	read_data(0xa0,Address_work_info_state_weizhi,qushuzu,1);
+	Delay( 1000 );
+	work_info_weizhishu = qushuzu[0];
+	work_info_weizhi=Address_work_info_first+work_info_weizhishu*32;
+
+	  
+	  work_info_yeshu_temp=1;
+	  work_info_yeshu=work_info_jishu/10;
+	  if(work_info_yeshu){
+	  	work_info_jishu_temp=10;
+	  }else{
+		work_info_jishu_temp=work_info_jishu;
+	  }
+	  while (work_info_jishu_temp){
+	  
+	  	read_data(0xa0,Address_work_info_first+(work_info_jishu_temp-1)*32,work_info_read,15);
+		Delay( 1000 );
+		fnShowwork_info_lishi(work_info_jishu_temp);
+	  	work_info_jishu_temp--;
+
+	  }
+
+  	while(1)
+	{ 
+	    if (rinterrupt==rinterrupt_Yes)
+		{  
+			rinterrupt = rinterrupt_No;
+
+			 if(rbuf[8]==0xA1)	//清零工作信息
+			{  
+			   mm=25;
+			   while(mm)
+				{
+				  work_info_read[mm-1]=0;
+				  work_info_write[mm-1]=0;
+				  mm--;
+				}
+				mm=200;
+			   while(mm)
+			   {
+			   	  write_data(0xa0,Address_work_info_first+(mm-1)*25,work_info_write,25);
+				  mm--;
+				  Delay( 2000 );
+			   }
+			   saveshuzu[0]=0;
+	   			write_data(0xa0,Address_work_info_state_weizhi,saveshuzu,1);
+				Delay( 1000 );
+				saveshuzu[0]=0;
+	   			write_data(0xa0,Address_work_info_state_jishu,saveshuzu,1);
+				Delay( 1000 );
+				write_data(0xa0,Address_TP_U_HH,work_info_write,8);
+				Delay( 2000 );
+				
+			   if(work_info_yeshu){
+	  				work_info_jishu_temp=10;
+	  			}else{
+					work_info_jishu_temp=work_info_jishu;
+	  			}
+	  			while (work_info_jishu_temp){
+					fnShowwork_info_lishi(work_info_jishu_temp);
+	  				work_info_jishu_temp--;
+
+	  			}
+				work_info_yeshu=0;
+				work_info_jishu=0;
+				work_info_yeshu_temp=1;
+				TotalPulse_U=0;	  
+				TotalJoule_U=0;	
+				fn_TotalPulseJoule();				
+			}
+			 else if(rbuf[8]==0xA2)	   //返回
+			{  
+				change_picture(0x07);
+				break;
+									
+			}
+			else if(rbuf[8]==0xA3)
+			{  
+			   if(work_info_yeshu_temp>1){				  
+				  work_info_jishu_temp=10;
+				  while (work_info_jishu_temp){	  
+	  				read_data(0xa0,Address_work_info_first+(work_info_yeshu_temp-2)*320+(work_info_jishu_temp-1)*32,work_info_read,15);
+					Delay( 1000 );
+					fnShowwork_info_lishi(work_info_jishu_temp);
+	  				work_info_jishu_temp--;
+	  			  }	
+				  work_info_yeshu_temp--;
+			   }
+
+									
+			}
+			else if(rbuf[8]==0xA4)
+			{  
+			   if(work_info_yeshu_temp<=work_info_yeshu){				  
+				  if(work_info_yeshu_temp==work_info_yeshu)	{
+				  	work_info_jishu_temp=work_info_jishu%10;
+					JJ=10;
+				  	while (JJ>work_info_jishu_temp){	  
+						fnShowwork_info_lishiqingchu(JJ);
+	  					JJ--;
+	  			  	}
+				  }
+				  else
+					work_info_jishu_temp=10;
+
+				  while (work_info_jishu_temp){	  
+	  				read_data(0xa0,Address_work_info_first+work_info_yeshu_temp*320+(work_info_jishu_temp-1)*32,work_info_read,15);
+					Delay( 1000 );
+					fnShowwork_info_lishi(work_info_jishu_temp);
+	  				work_info_jishu_temp--;
+	  			  }
+				  work_info_yeshu_temp++;
+			   }
+
+									
+			}
+		}
+
+	}
+
+}
+
+/*保养数据修改*/
+void baoyang_xiugai (void)
+{
+
+	/*初始化面板*/
+		//读取保养计数
+	read_data(0xa0,Address_baoyang_jishu,qushuzu,1);
+	Delay( 1000 );
+	baoyang_jishu = qushuzu[0];
+	baoyang_jishu = baoyang_jishu<<8;
+	read_data(0xa0,Address_baoyang_jishu+1,qushuzu,1);
+	Delay( 1000 );
+	baoyang_jishu += qushuzu[0];
+	//读取保养参考
+	read_data(0xa0,Address_baoyang_cankao,qushuzu,1);
+	Delay( 1000 );
+	baoyang_cankao = qushuzu[0];
+	baoyang_cankao = baoyang_cankao<<8;
+	read_data(0xa0,Address_baoyang_cankao+1,qushuzu,1);
+	Delay( 1000 );
+	baoyang_cankao += qushuzu[0];	
+	if(baoyang_cankao>=1000){
+			baoyang_cankao=300;
+			saveshuzu[0]=baoyang_cankao/256;
+					write_data(0xa0,Address_baoyang_cankao,saveshuzu,1);
+					Delay( 1000 );
+					saveshuzu[0]=baoyang_cankao%256;
+					write_data(0xa0,Address_baoyang_cankao+1,saveshuzu,1);
+					Delay( 1000 );
+	}
+		//读取光纤最大寿命
+	read_data(0xa0,Address_guangxian_shouming,qushuzu,1);
+	Delay( 1000 );
+	guangxian_shouming = qushuzu[0];
+	if(guangxian_shouming>100||guangxian_shouming<10){
+			guangxian_shouming=240;
+			saveshuzu[0]=guangxian_shouming;
+			write_data(0xa0,Address_guangxian_shouming,saveshuzu,1);
+			Delay( 1000 );
+	}
+	
+	baoyang_gxshu();
+	
+	baoyang_dangqianjishu();
+	baoyang_cankaoshu();
+	
+	while(1)
+	{ 
+		if (rinterrupt==rinterrupt_Yes)
+		{  
+			rinterrupt = rinterrupt_No;
+
+			if(rbuf[8]==0x91)
+				{  				   
+					baoyang_jishu=0;
+					saveshuzu[0]=baoyang_jishu/256;
+					write_data(0xa0,Address_baoyang_jishu,saveshuzu,1);
+					Delay( 1000 );
+					saveshuzu[0]=baoyang_jishu%256;
+					write_data(0xa0,Address_baoyang_jishu+1,saveshuzu,1);
+					Delay( 1000 );
+					baoyang_dangqianjishu();
+									
+				} 
+			
+			else if(rbuf[8]==0x93)
+				{  
+				  baoyang_cankao +=10;
+					if(baoyang_cankao>=1000)
+								baoyang_cankao=10;
+					baoyang_cankaoshu();								
+									
+				}
+			   else if(rbuf[8]==0x94)
+				{  
+           baoyang_cankao -=10;
+					if(baoyang_cankao<10)
+								baoyang_cankao=990;
+					baoyang_cankaoshu();
+					
+									
+				}
+				else if(rbuf[8]==0x96)
+				{  				   
+					saveshuzu[0]=baoyang_cankao/256;
+					write_data(0xa0,Address_baoyang_cankao,saveshuzu,1);
+					Delay( 1000 );
+					saveshuzu[0]=baoyang_cankao%256;
+					write_data(0xa0,Address_baoyang_cankao+1,saveshuzu,1);
+					Delay( 1000 );
+					saveshuzu[0]=guangxian_shouming;
+					write_data(0xa0,Address_guangxian_shouming,saveshuzu,1);
+					Delay( 1000 );
+					LCDqudong6_saved();
+									
+				}
+				else if(rbuf[8]==0x97)
+				{  
+
+					change_picture(0x07);
+					break;
+											
+				}
+				else if(rbuf[8]==0x98)
+				{  
+				  guangxian_shouming +=10;
+					if(guangxian_shouming>240)
+								guangxian_shouming=240;
+					baoyang_gxshu();							
+									
+				}
+			   else if(rbuf[8]==0x99)
+				{  
+           guangxian_shouming -=10;
+					if(guangxian_shouming<10)
+								guangxian_shouming=10;
+					baoyang_gxshu();
+					
+									
+				}
+								
+			}		
+	}
+}
+
+
+
+
+

@@ -1,0 +1,73 @@
+C51 COMPILER V9.60.0.0   CHARGEVOLT                                                        09/30/2026 09:26:25 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE CHARGEVOLT
+OBJECT MODULE PLACED IN ChargeVolt.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\ChargeVolt.c LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECT
+                    -EXTEND PRINT(.\ChargeVolt.lst) TABS(2) OBJECT(ChargeVolt.obj)
+
+line level    source
+
+   1          #include "include\includes.h"
+   2          
+   3          void fnDischangVolt_OutPut_uiA(uint ss)   //最大输入为 2400
+   4          {
+   5   1        float fldata;
+   6   1         if (ss>800)
+   7   1         {
+   8   2          ss = 800;//800v
+   9   2         }
+  10   1        fldata = (float)ss/1152.0;
+  11   1        ss = (uint)(4095.0*fldata);
+  12   1        DAC0L = ss%256;    // 电压基准2.4v (ss*4096/24/4)%256     由于AB放电顺序问题，将输出控制颠倒
+  13   1        DAC0H = ss/256;
+  14   1      }
+  15          
+  16          void fnDischangVolt_OutPut_uiB(uint ss)   //最大输入为 2400
+  17          {
+  18   1        float fldata;
+  19   1         if (ss>800)
+  20   1         {
+  21   2          ss = 800;//800v
+  22   2         }
+  23   1        fldata = (float)ss/1152.0;
+  24   1        ss = (uint)(4095.0*fldata);
+  25   1       
+  26   1        DAC1L = ss%256;    // 电压基准2.4v (ss*4096/24/4)%256 
+  27   1        DAC1H = ss/256;
+  28   1      }
+  29          
+  30          void DAC0_Init(void)
+  31          {
+  32   1         REF0CN |= 0x03;                  // 启用内部的电压基准源
+  33   1         DAC0CN  = 0x80;                  // 启用 DAC0 更新数据高位时更新输出 格式为最高4位无效
+  34   1         DAC1CN  = 0x80;                  // 启用 DAC1 更新数据高位时更新输出 格式为最高4位无效
+  35   1      }
+  36          
+  37          
+  38          
+  39          
+  40          
+  41          
+  42          
+  43          
+  44          
+  45          
+  46          
+  47          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    156    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       8
+   PDATA SIZE       =   ----    ----
+C51 COMPILER V9.60.0.0   CHARGEVOLT                                                        09/30/2026 09:26:25 PAGE 2   
+
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

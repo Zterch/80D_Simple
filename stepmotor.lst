@@ -1,0 +1,381 @@
+C51 COMPILER V9.60.0.0   STEPMOTOR                                                         09/30/2026 09:26:27 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE STEPMOTOR
+OBJECT MODULE PLACED IN stepmotor.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\stepmotor.c LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTE
+                    -XTEND PRINT(.\stepmotor.lst) TABS(2) OBJECT(stepmotor.obj)
+
+line level    source
+
+   1          
+   2          
+   3          #include "include\includes.h"
+   4          
+   5          uchar linshihi;
+   6          
+   7          /*电机相关子程序*/
+   8          
+   9          /*缓慢启动电机*/
+  10          void fnSlowStartupDrive ( )
+  11          {
+  12   1         /*启动电机*/
+  13   1        PCA0CN    = 0x00;   //停止计数器
+  14   1        PCA0MD = 0x02;         //时钟源为系统4分频，禁止溢出中断   总分频为128
+  15   1        PCA0CPM0  = 0x46;     //PCA0 配置为频率输出模式
+  16   1        PCA0CPH0  = 216;       //1HZ启动
+  17   1        PCA0CN    = 0x40;   //启动计数器  
+  18   1        while ( (PCA0CPH0-86)>0 )    //每次减小一个数值  频率上升至2.5hz
+  19   1        {
+  20   2          PCA0CPH0--;
+  21   2          Delay (2000); //20ms
+  22   2        }
+  23   1      
+  24   1      }
+  25          
+  26          
+  27          
+  28          /*根据上次频率调整驱动电压*/
+  29          void fnGenJuShangCiPinLvTiaoZheng (uchar ucFset)
+  30          {
+  31   1        if(one_orflag==0){  //多腔
+  32   2        if(ucFset==27)
+  33   2          ucFset=26;
+  34   2        else if(ucFset==33)
+  35   2          ucFset=32;
+  36   2        else if(ucFset==45)
+  37   2          ucFset=44;
+  38   2        else if(ucFset==50)
+  39   2          ucFset=48;
+  40   2        else if(ucFset==55)
+  41   2          ucFset=56;
+  42   2      
+  43   2          if(double_pluse_flag){ //双脉冲模式，
+  44   3            if(ucFset>=6)
+  45   3               ucFset=ucFset/2; 
+  46   3          }else{
+  47   3            if(ucFset>=14)
+  48   3               ucFset=ucFset/2; 
+  49   3          }
+  50   2        
+  51   2         
+  52   2        }
+  53   1      //  else{ //单腔模式  
+  54   1      //    if(double_pluse_flag){ //双脉冲模式，
+C51 COMPILER V9.60.0.0   STEPMOTOR                                                         09/30/2026 09:26:27 PAGE 2   
+
+  55   1      //      
+  56   1      //         ucFset=ucFset*2; 
+  57   1      //    }
+  58   1      //  }
+  59   1        linshihi=ucFset;
+  60   1        
+  61   1        if(ucFset==3){
+  62   2          Pre_CPH0 = dj_1_5Frequency;
+  63   2        }else if(ucFset==4){
+  64   2          Pre_CPH0  = dj_2Frequency;
+  65   2        }else if(ucFset==5){
+  66   2          Pre_CPH0 = dj_2_5Frequency;
+  67   2        }else if(ucFset==6){
+  68   2          Pre_CPH0  = dj_3Frequency;
+  69   2        }else if(ucFset==7){
+  70   2          Pre_CPH0  = dj_3_5Frequency;
+  71   2        }else if(ucFset==8){
+  72   2          Pre_CPH0  = dj_4Frequency;
+  73   2        }else if(ucFset==9){
+  74   2          Pre_CPH0  = dj_4_5Frequency;
+  75   2        }else if(ucFset==10){
+  76   2          Pre_CPH0  = dj_5Frequency;
+  77   2        }else if(ucFset==11){
+  78   2          Pre_CPH0  = dj_5_5Frequency;
+  79   2        }else if(ucFset==12){
+  80   2          Pre_CPH0  = dj_6Frequency;
+  81   2        }else if(ucFset==13){
+  82   2          Pre_CPH0  = dj_6_5Frequency;
+  83   2        }else if(ucFset==14){
+  84   2          Pre_CPH0  = dj_7Frequency;
+  85   2        }else if(ucFset==15){
+  86   2          Pre_CPH0  = dj_7_5Frequency;
+  87   2        }else if(ucFset==16){
+  88   2          Pre_CPH0  = dj_8Frequency;
+  89   2        }else if(ucFset==17){
+  90   2          Pre_CPH0  = dj_8_5Frequency;
+  91   2        }else if(ucFset==18){
+  92   2          Pre_CPH0  = dj_9Frequency;
+  93   2        }else if(ucFset==19){
+  94   2          Pre_CPH0  = dj_9_5Frequency;
+  95   2        }else if(ucFset==20){
+  96   2          Pre_CPH0  = dj_10Frequency;
+  97   2        }else if(ucFset==22){
+  98   2          Pre_CPH0  = dj_11Frequency;
+  99   2        }else if(ucFset==24){
+ 100   2          Pre_CPH0  = dj_12Frequency;
+ 101   2        }else if(ucFset==26){
+ 102   2          Pre_CPH0  = dj_13Frequency;
+ 103   2        }else if(ucFset==28){
+ 104   2          Pre_CPH0  = dj_14Frequency;
+ 105   2        }else if(ucFset==30){
+ 106   2          Pre_CPH0  = dj_15Frequency;
+ 107   2        }
+ 108   1        fnSlowlyAddDriveVolt ();
+ 109   1        SetFrequency_last=linshihi;
+ 110   1      
+ 111   1        return;
+ 112   1      }
+ 113          
+ 114          
+ 115          
+ 116          
+C51 COMPILER V9.60.0.0   STEPMOTOR                                                         09/30/2026 09:26:27 PAGE 3   
+
+ 117          /*缓慢增加、减小电机驱动频率*/
+ 118          void fnSlowlyAddDriveVolt ( )
+ 119          {
+ 120   1        if ( SetFrequency_last < 7 && linshihi >= 7 )        //分频模式切换，由128改为32分频，
+ 121   1        {
+ 122   2         while ( (PCA0CPH0-62)>0 )     //每次减小一个数值  频率上升至3.5hz
+ 123   2        {
+ 124   3          PCA0CPH0--;
+ 125   3          Delay (2000); //20ms
+ 126   3        }
+ 127   2      
+ 128   2        PCA0CN    = 0x00;   //停止计数器      改变分频模式，保持3.5hz
+ 129   2        PCA0MD = 0x08;         //时钟源为系统1分频，禁止溢出中断   总分频为32
+ 130   2          PCA0CPM0  = 0x46;     //配置为频率输出模式 
+ 131   2          PCA0CPH0  = dj_3_5Frequency; //电机频率为3.5HZ
+ 132   2          PCA0CN    = 0x40;   //启动计数器
+ 133   2      
+ 134   2      
+ 135   2        }else if ( SetFrequency_last >= 7 && linshihi < 7 )   //分频模式切换，由32改为128分频，
+ 136   1        {
+ 137   2        while ( (dj_3_5Frequency-PCA0CPH0)>0 )     //每次增加一个数值  频率降低至3.5hz
+ 138   2        {
+ 139   3            PCA0CPH0++;
+ 140   3            Delay (1000); //10ms
+ 141   3        }
+ 142   2        PCA0CN    = 0x00;   //停止计数器
+ 143   2        PCA0MD = 0x02;         //时钟源为系统4分频，禁止溢出中断   总分频为128
+ 144   2        PCA0CPM0  = 0x46;     //PCA0 配置为频率输出模式
+ 145   2        PCA0CPH0  = 62;      //3.5HZ启动
+ 146   2        PCA0CN    = 0x40;   //启动计数器  
+ 147   2      
+ 148   2      
+ 149   2        }else
+ 150   1        {
+ 151   2      
+ 152   2        }
+ 153   1        if ( PCA0CPH0>=Pre_CPH0 )        //驱动频率增加时    频率越高PCA0CPH0里的数值越小
+ 154   1        {
+ 155   2      
+ 156   2          while ( (PCA0CPH0-Pre_CPH0)>0 )    //每次减小一个数值
+ 157   2          {
+ 158   3            PCA0CPH0--;
+ 159   3            Delay (2000); //20ms
+ 160   3          }
+ 161   2        }else if ( Pre_CPH0>PCA0CPH0 )         //驱动频率减小时
+ 162   1        {
+ 163   2      
+ 164   2          while ( (Pre_CPH0-PCA0CPH0)>0 )    //每次增加一个数值
+ 165   2          {
+ 166   3            PCA0CPH0++;
+ 167   3            Delay (1000); //10ms
+ 168   3          }
+ 169   2        }
+ 170   1       
+ 171   1      
+ 172   1        return;
+ 173   1      }
+ 174          
+ 175          
+ 176          
+ 177          
+ 178          uint fnMeasureCycle( uchar ucChoiceedge )
+C51 COMPILER V9.60.0.0   STEPMOTOR                                                         09/30/2026 09:26:27 PAGE 4   
+
+ 179          {
+ 180   1      //  uchar ucMeasurecount;/*周期测量次数*/
+ 181   1        ulong ulCyclecount;/*存储电机周期计数值*/
+ 182   1      //  bit bCountcycle;/*计算周期使能位*/
+ 183   1      
+ 184   1        if ( ucChoiceedge==Adown )/*通光位置*/
+ 185   1        {
+ 186   2           CA = 0;
+ 187   2           CB = 1;  /*取单路沿,上升沿*/
+ 188   2          
+ 189   2        }
+ 190   1        else if ( ucChoiceedge==Bup )/*不通光位置*/
+ 191   1          {
+ 192   2             CA = 1;
+ 193   2             CB = 0;  /*取单路沿,下降沿*/
+ 194   2          }
+ 195   1          else if ( ucChoiceedge==ABupdown )
+ 196   1            {
+ 197   2            CA = 1;
+ 198   2              CB = 1; /*取双路沿,上升沿/下降沿*/
+ 199   2            }
+ 200   1            else
+ 201   1            {
+ 202   2              CA = 1;
+ 203   2                CB = 1; /*取双路沿,上升沿/下降沿*/
+ 204   2            }
+ 205   1      
+ 206   1        /*初始化--测速功能，标志变量*/
+ 207   1        #if 1
+ 208   1          biChoiceT2Fun = T2Fun1;
+ 209   1          capture = T2MeasureSpeed;
+ 210   1          ulCyclecount = 0;
+ 211   1          ucSamples = StartSample;
+ 212   1          T2CON = 0x09;/*捕获*/
+ 213   1          ET2 = 1;
+ 214   1          TR2 = 1;
+ 215   1        #endif
+ 216   1      
+ 217   1        while (1)
+ 218   1        {
+ 219   2          if (ucSamples==7)
+ 220   2          { 
+ 221   3            RCAP2 =  RCAP2H;
+ 222   3            RCAP2 =(RCAP2<<8)&0xFF00;
+ 223   3            RCAP2 |= RCAP2L;
+ 224   3            ulCyclecount =RCAP2 + 0x10000 * nb_overflows_old - RCAP2_old;
+ 225   3            ulCyclecount = ulCyclecount/6;    //
+ 226   3            ulCyclecount = ulCyclecount*100/18432; //0.5425us 的时钟周期有多少个100us 
+ 227   3            EXEN2=1;
+ 228   3            ET2 = 0;
+ 229   3            TR2 = 0;
+ 230   3            return ulCyclecount;
+ 231   3          }
+ 232   2          if (nb_overflows>30)/*这个条件在周期测量函数中是合适的，周期大于0.03555*20=0.7s
+ 233   2            ,显然比5hz低得多*/
+ 234   2          {
+ 235   3            if (Flag_Flow==Flag_ZhengChang)
+ 236   3            {
+ 237   4              halt();/*故障处理*/
+ 238   4              SysFault(12);
+ 239   4              while (1)
+ 240   4              {
+C51 COMPILER V9.60.0.0   STEPMOTOR                                                         09/30/2026 09:26:27 PAGE 5   
+
+ 241   5                Alarm(sound3);
+ 242   5                Delay_5s();
+ 243   5              }
+ 244   4            }else{
+ 245   4              /*清除溢出标志*/
+ 246   4              nb_overflows = 0;
+ 247   4              /*暂时停用Timer2*/
+ 248   4      
+ 249   4              ET2 = 0;
+ 250   4              TR2 = 0;
+ 251   4              LCD_DianJi_TingZhuanorTaiMan();
+ 252   4              
+ 253   4            }
+ 254   3      //        Alarm(sound2);
+ 255   3              return 0;/*返回ulCyclecount = 0*/
+ 256   3          }
+ 257   2        }
+ 258   1      }
+ 259          
+ 260          
+ 261          
+ 262          
+ 263          /*步进电机监测调整程序*/  
+ 264          void fnDianJiCheckAdjust(uchar Fset)
+ 265          {
+ 266   1        ulong ulCycleCount;//电机转速周期计数平均值
+ 267   1      
+ 268   1       if(one_orflag==0){ //多腔
+ 269   2        if(Fset==27)
+ 270   2          Fset=26;
+ 271   2        else if(Fset==33)
+ 272   2          Fset=32;
+ 273   2        else if(Fset==45)
+ 274   2          Fset=44;
+ 275   2        else if(Fset==50)
+ 276   2          Fset=48;
+ 277   2        else if(Fset==55)
+ 278   2          Fset=56;
+ 279   2      
+ 280   2          if(double_pluse_flag){ //双脉冲模式，
+ 281   3            if(Fset>=6)
+ 282   3               Fset=Fset/2; 
+ 283   3          }else{
+ 284   3            if(Fset>=14)
+ 285   3               Fset=Fset/2; 
+ 286   3          }
+ 287   2        
+ 288   2         
+ 289   2        }
+ 290   1      //  else{ //单腔模式  
+ 291   1      //    if(double_pluse_flag){ //双脉冲模式
+ 292   1      //      
+ 293   1      //         Fset=Fset*2; 
+ 294   1      //    }
+ 295   1      //  }
+ 296   1      
+ 297   1        while (1)
+ 298   1        {
+ 299   2            //测量转速(周期检测法，算术平均值N=6)
+ 300   2          ulCycleCount = fnMeasureCycle(Adown);
+ 301   2      
+ 302   2          //可能需要修改，0.01 改为0.03
+C51 COMPILER V9.60.0.0   STEPMOTOR                                                         09/30/2026 09:26:27 PAGE 6   
+
+ 303   2          if (ulCycleCount>=10000/(ulong)Fset+(ulong)((float)(10000/(ulong)Fset)*FrequencyError))  //
+ 304   2          {
+ 305   3            PCA0CPH0--;
+ 306   3            Delay (2000); //20ms
+ 307   3        
+ 308   3          }
+ 309   2          else if (ulCycleCount<=10000/(ulong)Fset-(ulong)((float)(10000/(ulong)Fset)*FrequencyError))
+ 310   2          {
+ 311   3            PCA0CPH0++;
+ 312   3            Delay (1000); //10ms
+ 313   3              
+ 314   3          }                    
+ 315   2          
+ 316   2          else//满足频率相对误差< 3%
+ 317   2          {
+ 318   3              
+ 319   3              return; 
+ 320   3          }
+ 321   2      
+ 322   2          if ( PCA0CPH0>=Pre_CPH0*Pca0_Error_p ||PCA0CPH0<=Pre_CPH0*Pca0_Error_n )   //  PCA0CPH0的值超差10%则产生
+             -故障报警，有待验证
+ 323   2          {
+ 324   3            //故障处理
+ 325   3            PCA0CN    = 0x00; //电机停转
+ 326   3                SysFault(11);
+ 327   3            while (1)
+ 328   3            {
+ 329   4              Alarm(sound3);
+ 330   4              Delay_5s();
+ 331   4            }           
+ 332   3          }
+ 333   2          else
+ 334   2          {
+ 335   3                
+ 336   3          }
+ 337   2      
+ 338   2        }
+ 339   1      }
+ 340          
+ 341          
+ 342          
+ 343          
+ 344          
+ 345          
+ 346          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1580    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      1       9
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

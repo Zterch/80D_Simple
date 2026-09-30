@@ -1,0 +1,1 @@
+"source\stepmotor.c" LARGE OPTIMIZE (7,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\stepmotor.lst) TABS (2) OBJECT(stepmotor.obj)

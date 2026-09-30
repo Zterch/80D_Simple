@@ -1,0 +1,613 @@
+
+#include "include\includes.h"
+
+
+
+/*监测子程序*/
+#if 1
+
+void Alarm (uchar ucSoundAddress )
+{
+
+		if(ucSoundAddress){
+	    CBJ = 0;
+			Delay (30000);
+			CBJ = 1;
+			Delay (20000);
+			CBJ = 0;
+			Delay (30000);
+			CBJ = 1;
+			Delay (20000);
+			CBJ = 0;
+			Delay (30000);
+			CBJ = 1;
+		}else{
+			CBJ = 1;
+		}
+  
+	return;
+}
+
+
+
+//开机自检程序
+void CheckPowerOn(void)
+{
+
+	/*读取状态信号*/
+	P4status = P4;
+	P6status = P6;
+	P5status = P5;
+
+		/*检测水温[ 常温10~30]  ST1是低温标志，ST2是高温标志*/
+	if (MB_ST_YC)
+	{
+		if (!(SDWA==0&&SGWA==1))	 //水温故障，进一步判断
+		{
+			if (SGWA==0)	 //水温> 35C 
+			{
+			    halt();
+				LCD_WatertemDanger();
+				while (1)
+				{
+						Alarm(sound3);
+						Delay_5s();
+				}	 	
+			}
+			else if (SDWA==1)  //水温<=5C
+			{
+				halt();
+				CJDQ = JDQ_Close; //压缩机断电	
+				LCD_WatertemisFalling( );
+				while (1)
+				{
+						Alarm(sound3);
+						Delay_5s();
+				}
+			}
+
+			if(am2302flg){
+		  		am2302flg=0;
+				RH_HJ();
+		  		if(temperature_HJ>290&&temperature_HJ<=350){
+				   shuiwen_chuli=01;
+				}else if(temperature_HJ<=290&&temperature_HJ>230){
+				   shuiwen_chuli=03;
+				}else if(temperature_HJ<=230&&temperature_HJ>=100){
+				   shuiwen_chuli=07;
+				}
+		  		
+			}
+		}	 
+	}
+
+	/*检测水流量A	[	应为通	    ]*/
+	/*检测水流量B	[	应为通	    ]*/
+	if(MB_SLQSL_AB==Check_Enable)
+	{
+		if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+		{
+			Delay_100us();
+			P5status = P5;
+			if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+			{
+				Delay_100us();
+				P5status = P5;
+				if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+				{
+					halt();
+					CJDQ = JDQ_Close; //压缩机断电
+					LCD_WaterSteamError();
+					while (1)
+					{
+						Alarm(sound3);
+						Delay_5s();
+					}
+				}
+			}
+		}
+	}
+	
+	/*检测电源A		[	应为正常]*/
+	/*检测电源B		[	应为正常]*/
+	if (MB_SDY_AB==Check_Enable)
+	{
+		if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+		{
+			Delay_100us();
+			P6status=P6;
+			if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+			{
+				Delay_100us();
+				P6status=P6;
+				if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+				{
+					halt();
+					CJDQ = JDQ_Close; //压缩机断电
+					LCD_PowerError();
+					while (1)
+					{
+						Alarm(sound3);
+						Delay_5s();
+					}
+				}
+			}
+		}
+	}
+		
+
+	/*检测门锁[	关闭		]*/
+	if (MB_SLS==Check_Enable)
+	{
+		if (SLS==SLS_open)
+		{
+			Delay_100us();
+			P4status=P4;
+			if (SLS==SLS_open)
+			{
+				Delay_100us();
+				P4status=P4;
+				if (SLS==SLS_open)
+				{
+					LCD_CloseDoor();
+				  		while( SLS==SLS_open )
+						{/*SLS=0，即门开启*/
+							Alarm (sound3);
+							Delay_1s();
+							P4status=P4;
+						}
+					LCDzhiliaojizijian();
+					
+				}
+			}
+		}
+	}
+
+	/*检测光纤[	插入		]*/
+	if (MB_SGX==Check_Enable)
+	{
+		if (SGX==SGX_renegade)
+		{
+			Delay_100us();
+			P4status=P4;
+			if (SGX==SGX_renegade)
+			{
+				Delay_100us();
+				P4status=P4;
+				if (SGX==SGX_renegade)
+				{
+
+					LCD_InsertFiber();
+						while ( SGX==SGX_renegade )
+						{/*SGX=0，光纤故障*/
+							Alarm (sound3);
+							Delay_1s();
+							P4status=P4;
+						}
+					LCDzhiliaojizijian();
+
+				}
+			}
+		}
+	}
+	
+		if (MB_SGX==Check_Enable)
+	{
+//		check_GX_init();
+	}
+	
+		/*检测脚踏[	非踏下	]*/
+	if(!(SJTA0==0&&SJTA1==0))
+ 	{/*若SJT1=1  并且SJT2=0的状态不成立*//*即踏下位置或者脚踏开关未连接*/
+		LCD_CheckFeetSwitch();
+  		while(!(SJTA0==0&&SJTA1==0))
+		{
+			Alarm(sound3);
+			Delay_1s();
+			P4status=P4;
+
+		}
+		LCDzhiliaojizijian();
+
+ 	}
+	
+	/*检测反馈[	<0.1v]*/
+	CNL=1;   //将反馈电压泄放 清零
+	oneEnergy = 0;
+	adstart(0);	  //启动ADC能量检测
+    while(adc0_flag==0);
+    adc0_flag=0;
+  	while ( oneEnergy>KEVLimited )
+  	{
+  		/*[LCD]系统故障3，即开机能量不为0*/
+  		SysFault(3);
+  		Alarm(sound3);
+		  Delay_1s();
+		  adstart(0);	  //启动ADC能量检测
+      	while(adc0_flag==0);
+      	adc0_flag=0;
+
+	  }
+	LCDzhiliaojizijian();
+	return;
+}
+
+
+
+/*0--无故障	1--有可恢复故障*/
+bool CheckZC_dai_zhun_Discharge ( void )/*以后补充代码*/
+{
+	/*读取状态信号*/
+	P4status = P4;
+	P6status = P6;
+	P5status = P5;
+
+	/*检测水温[ 常温10~30]  ST1是低温标志，ST2是高温标志*/
+	if (MB_ST_YC)
+	{
+		if (!(SDWA==0&&SGWA==1))	 //水温故障，进一步判断
+		{
+			if (SGWA==0)	 //水温> 35C 
+			{
+			    halt();
+				LCD_WatertemDanger();
+				while (1)
+				{
+						Alarm(sound3);
+						Delay_5s();
+				}	 	
+			}
+			else if (SDWA==1)  //水温<=5C
+			{
+				halt();
+				CJDQ = JDQ_Close; //压缩机断电	
+				LCD_WatertemisFalling( );
+				while (1)
+				{
+						Alarm(sound3);
+						Delay_5s();
+				}
+			}
+		}
+		if ( biDischanging==Dischanging_No ){
+
+		  if(am2302flg){
+		  		am2302flg=0;
+				RH_HJ();
+		  		if(temperature_HJ>290&&temperature_HJ<=350){
+				   shuiwen_chuli=01;
+				}else if(temperature_HJ<=290&&temperature_HJ>230){
+				   shuiwen_chuli=03;
+				}else if(temperature_HJ<=230&&temperature_HJ>=100){
+				   shuiwen_chuli=07;
+				}
+		  		
+			}
+
+
+		}
+			 
+	}
+
+	/*检测水流量A	[	应为通	    ]*/
+	/*检测水流量B	[	应为通	    ]*/
+	if(MB_SLQSL_AB==Check_Enable)
+	{
+		if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+		{
+			Delay_100us();
+			P5status = P5;
+			if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+			{
+				Delay_100us();
+				P5status = P5;
+				if (SLQSL_A==SLQSL_obstruct||SLQSL_B==SLQSL_obstruct )
+				{
+					halt();
+					CJDQ = JDQ_Close; //压缩机断电
+					LCD_WaterSteamError();
+					while (1)
+					{
+						Alarm(sound3);
+						Delay_5s();
+					}
+				}
+			}
+		}
+	}
+	
+	/*检测电源A		[	应为正常]*/
+	/*检测电源B		[	应为正常]*/
+	if (MB_SDY_AB==Check_Enable)
+	{
+		if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+		{
+			Delay_100us();
+			P6status=P6;
+			if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+			{
+				Delay_100us();
+				P6status=P6;
+				if (!(SDY_A==SDY_ok && SDY_B==SDY_ok))
+				{
+					halt();
+					CJDQ = JDQ_Close; //压缩机断电
+					LCD_PowerError();
+					while (1)
+					{
+						Alarm(sound3);
+						Delay_5s();
+					}
+				}
+			}
+		}
+	}
+
+
+	/*检测门锁[	关闭		]*/
+	if (MB_SLS==Check_Enable)
+	{
+		if (SLS==SLS_open)
+		{
+			Delay_100us();
+			P4status=P4;
+			if (SLS==SLS_open)
+			{
+				Delay_100us();
+				P4status=P4;
+				if (SLS==SLS_open)
+				{
+					LCD_CloseDoor();
+					if(Status==1){
+				  		while( SLS==SLS_open )
+						{/*SLS=0，即门开启*/
+							Alarm (sound3);
+							Delay_1s();
+							P4status=P4;
+						}
+						fnShowdaiji();
+					}else if(Status==2){				//准备或发射
+					   halt();
+					   CJDQ = JDQ_Close; //压缩机断电
+					   while (1)
+						{
+							Alarm(sound3);
+							Delay_5s();
+						}
+					}				
+
+					
+				}
+			}
+		}
+	}
+
+	/*检测光纤[	插入		]*/
+	if (MB_SGX==Check_Enable)
+	{
+		if (SGX==SGX_renegade)
+		{
+			Delay_100us();
+			P4status=P4;
+			if (SGX==SGX_renegade)
+			{
+				Delay_100us();
+				P4status=P4;
+				if (SGX==SGX_renegade)
+				{
+					
+					LCD_InsertFiber();
+				    if(Status==1){
+						while ( SGX==SGX_renegade )
+						{/*SGX=0，光纤故障*/
+							Alarm (sound3);
+							Delay_1s();
+							P4status=P4;
+						}
+						fnShowdaiji();
+				   }else if(Status==2){				//准备或发射
+				       halt();
+					   CJDQ = JDQ_Close; //压缩机断电
+					   while (1)
+						{
+							Alarm(sound3);
+							Delay_5s();
+						}
+					}
+
+				}
+			}
+		}
+	}
+	
+		if (MB_SGX==Check_Enable)
+	{
+//		check_GX();
+	}
+	
+	
+	if (MB_SGZ_ABW==Check_Enable)
+	{
+	  if(Status==1){	 /*检测光闸[ W关	]*/
+		if (SWGZ0==SWGZ_open)
+		{
+			Delay_100us();
+			P6status=P6;
+			if (SWGZ0==SWGZ_open)
+			{
+				Delay_100us();
+				P6status=P6;
+				if (SWGZ0==SWGZ_open)
+				{
+					halt();
+					CJDQ = JDQ_Close; //压缩机断电
+					SysFault(54);
+					while (1)
+					{
+						Alarm(sound3);
+						Delay_5s();
+					}
+				}
+			}
+		}
+	  }else if(Status==2){		   /*检测光闸[ W开	]*/
+		if (SWGZ0==SWGZ_close)
+		{
+			Delay_100us();
+			P6status=P6;
+			if (SWGZ0==SWGZ_close)
+			{
+				Delay_100us();
+				P6status=P6;
+				if (SWGZ0==SWGZ_close)
+				{
+					halt();
+					CJDQ = JDQ_Close; //压缩机断电
+					SysFault(54);
+					while (1)
+					{
+						Alarm(sound3);
+						Delay_5s();
+					}
+				}
+			}
+		}
+	  }
+	}
+	
+	/*检测预燃状态*/
+	if (MB_SYR_AB==Check_Enable)
+	{
+		if(SYR_A==SYR_cancel || SYR_B==SYR_cancel)
+		{
+			Delay_100us();
+			Delay_100us();
+			Delay_100us();
+			Delay_100us();
+			P6status=P6;
+			if(SYR_A==SYR_cancel || SYR_B==SYR_cancel)
+			{
+				Delay_100us();
+				Delay_100us();
+				Delay_100us();
+				Delay_100us();
+				P6status=P6;
+				if(SYR_A==SYR_cancel || SYR_B==SYR_cancel)
+				{
+					halt();
+					CJDQ = JDQ_Close; //压缩机断电
+					if (biDischanging==Dischanging_Yes)
+					{
+						SysFault(8);
+					}
+					else
+					{
+						SysFault(6);
+					}
+					while (1)
+					{
+						Alarm(sound3);
+						Delay_5s();
+					}
+				}
+			}
+		}
+	}
+
+		/*检测脚踏[	非踏下	]*/
+  if(Status==1){
+	if(!(SJTA0==0&&SJTA1==0))
+ 	{/*若SJT1=1  并且SJT2=0的状态不成立*//*即踏下位置或者脚踏开关未连接*/
+		LCD_CheckFeetSwitch();
+  		while(!(SJTA0==0&&SJTA1==0))
+		{
+			Alarm(sound3);
+			Delay_1s();
+			P4status=P4;
+
+		}
+		fnShowdaiji();
+
+ 	}
+   }
+
+
+		/*检测电机[	无停转	]*/
+		if ( biTestDianji==TestDianji )
+		{
+			if ( uiT2OverFlows>20 )
+			{
+				uiT2OverFlows = 0x00;
+
+					halt();
+					CJDQ = JDQ_Close; //压缩机断电
+					SysFault(10);
+					while (1)
+					{
+						Alarm(sound3);
+						Delay_5s();
+					}
+
+			}
+		}
+
+	return 0;
+}
+
+
+/*高频充放电过程中的重要检测*/
+bool Check_Dischanging_1040 (void)
+{
+	if ( ucDischangingDianJi_T2overflows>=20 )
+	{
+
+		halt();
+		CJDQ = JDQ_Close; //压缩机断电
+		ucDischangingDianJi_T2overflows = 0x00;
+		SysFault(16);
+		while (1)
+		{
+			Alarm(sound3);
+			Delay_5s();
+		}
+	}
+	return 0;
+}
+
+
+
+
+
+/*用于停止系统充放电*/
+void halt (void)
+{
+
+
+	fnDischangVolt_OutPut_uiA(0x0000);
+	fnDischangVolt_OutPut_uiB(0x0000);
+
+	CCDFD = 0;/*禁止充电命令*/
+	CWGZ = GZ_Close;
+	CYR_A = YR_Close;
+	CYR_B = YR_Close;
+	PULSE = 0;
+
+	ET0=0;/*禁止放电中断*/
+	TR0=0;
+	ET2=0;
+	TR2=0;
+
+
+	return;
+}
+
+
+#endif
+
+
+
+
+
+
+
+

@@ -1,0 +1,13 @@
+extern void Initialize ( void );
+extern void Reset_Sources_Init(void);
+extern void Oscillator_Init(void);
+extern void Port_IO_Init(void);
+extern void Timer0Init( void );
+extern void Timer3Init( void );
+extern void Initialize_5Parameter ( void );
+extern void Initialize_Other_Parameter ( void );
+extern void fnSelectTimer2_Fun2_first (void);
+extern void fnYuRan_On (void);
+extern void fnYuRan_Off (void);
+extern void fnguangzha_on(void);
+extern void fnguangzha_off(void);

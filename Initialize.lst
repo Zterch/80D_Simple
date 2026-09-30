@@ -1,0 +1,876 @@
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE INITIALIZE
+OBJECT MODULE PLACED IN Initialize.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\Initialize.C LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECT
+                    -EXTEND PRINT(.\Initialize.lst) TABS(2) OBJECT(Initialize.obj)
+
+line level    source
+
+   1          
+   2          
+   3          #include "include\includes.h"
+   4          
+   5          
+   6          /*初始化子程序*/
+   7          #if 1
+   8          void Initialize ( void )
+   9          {
+  10   1      
+  11   1          /*初始化*/
+  12   1          Reset_Sources_Init();    // 禁看门狗
+  13   1          Port_IO_Init();          // 端口 + 交叉开关
+  14   1          Oscillator_Init();       // 外部 22.1184MHz 晶振
+  15   1          Timer0Init();            // 50us 定时
+  16   1          Timer3Init();            // 10ms 定时
+  17   1          ADC0_Init();
+  18   1          DAC0_Init();
+  19   1          init_smbus();            // SMBus 给 AT24C512
+  20   1          UART0_Init();            // 调试/上位机
+  21   1          UART1_Init();            // RFID 模块
+  22   1          Pwm_LD_init();           // 指示光 PWM
+  23   1          EA = 1; 
+  24   1          Delay_1s(); 
+  25   1          Delay_1s(); 
+  26   1                                   
+  27   1          saveshuzu[0] = 0;                //先写一次 否则直接读EEPROM 会有问题
+  28   1          write_data(0xa0, 0, saveshuzu, 1);  
+  29   1          Delay_1s();
+  30   1        
+  31   1          /*8051 的 P5 端口不能位寻址（P5 地址 0x85 不是 8 的倍数，
+  32   1           *只有地址是 8 的倍数的 SFR 才能位寻址，比如 P0=0x80、P1=0x90、P2=0xA0、P3=0xB0）。
+  33   1           *先读整个字节到 RAM 变量，再用 sbit 访问它的位：*/
+  34   1          P5status = P5;
+  35   1          
+  36   1          if (KAIHUAN == 1)      //判断是否进入开环状态
+  37   1          {   
+  38   2              change_picture(0x07);
+  39   2              test1_6function();      
+  40   2          }
+  41   1          
+  42   1          change_picture(0x02);
+  43   1          
+  44   1          LCDzhiliaojizijian();
+  45   1          
+  46   1          
+  47   1          /*初始化工作参数*/
+  48   1          Initialize_5Parameter();
+  49   1          
+  50   1          /*设置某些参数*/
+  51   1          Initialize_Other_Parameter();
+  52   1          
+  53   1          
+  54   1          /*开机自检*/
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 2   
+
+  55   1          //吸合压缩机
+  56   1          CJDQ = JDQ_Open;
+  57   1          Delay_1s();
+  58   1          CA = 0;
+  59   1          CB = 1;   /*取单路沿,上升沿*/ 
+  60   1            
+  61   1          //预燃监测
+  62   1          fnYuRan_Off();
+  63   1          fnYuRan_On();
+  64   1          
+  65   1          //光闸检测    
+  66   1          fnguangzha_on();
+  67   1          fnguangzha_off();
+  68   1          Delay_1s();
+  69   1          
+  70   1          //启动步进电机
+  71   1          fnSlowStartupDrive ( );//启动到2.5HZ
+  72   1          fnDianJiCheckAdjust(5);
+  73   1          
+  74   1          
+  75   1          CheckPowerOn();
+  76   1          fnGenJuShangCiPinLvTiaoZheng(SetFrequency);
+  77   1          fnDianJiCheckAdjust(SetFrequency);
+  78   1          pwm_ld_data=20000;  //指示灯亮度为40%
+  79   1          Pwm_LD(pwm_ld_data);
+  80   1          //Alarm(sound2);
+  81   1          return;
+  82   1      }
+  83          
+  84          
+  85          void Reset_Sources_Init()
+  86          {
+  87   1          WDTCN     = 0xDE;
+  88   1          WDTCN     = 0xAD;    //禁止看门狗
+  89   1      }
+  90          
+  91          void Port_IO_Init()
+  92          {
+  93   1          P1MDOUT   = 0x00;   // P1为开漏输出
+  94   1          P2MDOUT   = 0x00;   // P2为开漏输出  
+  95   1          P3MDOUT   = 0x00;   // P3为开漏输出
+  96   1          // P0.0  -  TX0 (UART0), Open-Drain, Digital
+  97   1          // P0.1  -  RX0 (UART0), Open-Drain, Digital
+  98   1          // P0.2  -  SDA (SMBus), Open-Drain, Digital
+  99   1          // P0.3  -  SCL (SMBus), Open-Drain, Digital
+ 100   1          // P0.4  -  TX1 (UART1), Open-Drain, Digital
+ 101   1          // P0.5  -  RX1 (UART1), Open-Drain, Digital
+ 102   1          // P0.6  -  CEX0 (PCA),  Open-Drain, Digital
+ 103   1          // P0.7  -  CEX1 (PCA),  Open-Drain, Digital
+ 104   1      
+ 105   1          // P1.0  -  CEX2 (PCA),  Open-Drain, Digital
+ 106   1          // P1.1  -  T2EX (Tmr2), Open-Drain, Digital
+ 107   1          XBR0      = 0x1D;
+ 108   1          XBR1      = 0x40;
+ 109   1          XBR2      = 0x44;
+ 110   1      
+ 111   1          P74OUT    = 0x00; //P4/P5/P6为数字输入方式
+ 112   1          P4        = 0xff;
+ 113   1          P5        = 0xff;
+ 114   1          P6        = 0xff;
+ 115   1          P7        = 0xff;
+ 116   1        
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 3   
+
+ 117   1          P1   = 0x00;    //  初始化控制端口
+ 118   1          P2   = 0x0F;    // CLAMP=0  CJDQ=1 CWGZ=1 FSFMQ=1 CBJ=1 
+ 119   1          P3   = 0xF0;    // CA/CB=0 PULSE=0  CCDFD=0     CNL=1 CYR_A/CYR_B=1 2302HJ=1
+ 120   1      
+ 121   1      }
+ 122          
+ 123          //22.1184M
+ 124          void Oscillator_Init()
+ 125          {
+ 126   1          int i = 0;
+ 127   1          OSCXCN    = 0x67;            //选用外部晶体振荡器 频率大于6.7M
+ 128   1          for (i = 0; i < 3000; i++);  // Wait 1ms for initialization
+ 129   1          while ((OSCXCN & 0x80) == 0);//XTLVLD 等待晶体振荡器有效标志位 置位ckcon
+ 130   1          OSCICN    = 0x88;            //允许检测时钟丢失 选择外部晶振 
+ 131   1      }
+ 132          
+ 133          void Timer0Init( void )
+ 134          {
+ 135   1        TMOD   |= 0x01; //16位定时模式                  
+ 136   1        TL0 = (65536-92)%256;     //系统时钟12分频 作为定时器2时钟源             
+ 137   1        TH0 = (65536-92)/256;     //精度可以满足   此定时为50us，准确数为49.945us   精度1%    
+ 138   1        ET0=1;
+ 139   1      }
+ 140          
+ 141          void Timer3Init( void )
+ 142          { 
+ 143   1          TMR3CN    = 0x04;                   //定时器3启动
+ 144   1          TMR3RLL   = (65536-18400)%256;      //系统时钟12分频 作为定时器3时钟源
+ 145   1          TMR3RLH   = (65536-18400)/256;      //定时10ms
+ 146   1          EIE2     |= 0x01;                   //允许定时器3中断
+ 147   1      }
+ 148          
+ 149           /*  //初始化中断优先级、使能标志
+ 150          void fnInterruptTimer ( void )
+ 151          {
+ 152            
+ 153                //IP=0x02;
+ 154          }   */
+ 155          
+ 156          void Initialize_5Parameter ( void )
+ 157          {
+ 158   1        uchar temp;
+ 159   1      
+ 160   1        /*读取频率*/
+ 161   1        read_data(0xa0,AddressFreq_left,qushuzu,1);
+ 162   1        Delay( 1000 );
+ 163   1        temp = qushuzu[0];
+ 164   1        if((temp>=minFreq)&&(temp<=maxFreq))
+ 165   1        {
+ 166   2          SetFrequency = temp;
+ 167   2          SetFrequency_only = temp;
+ 168   2        }
+ 169   1        else
+ 170   1        {
+ 171   2          SetFrequency = LimitFrequency;
+ 172   2          SetFrequency_only = LimitFrequency;
+ 173   2        }
+ 174   1        SetFrequency_last=5;
+ 175   1        
+ 176   1        read_data(0xa0,AddressFreq_left_double,qushuzu,1);
+ 177   1        Delay( 1000 );
+ 178   1        temp = qushuzu[0];
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 4   
+
+ 179   1        if((temp>=3)&&(temp<=30))
+ 180   1        {
+ 181   2          SetFrequency_double = temp;
+ 182   2        }
+ 183   1        else
+ 184   1        {
+ 185   2          SetFrequency_double = 3;
+ 186   2        }
+ 187   1      
+ 188   1        /*读取能量*/
+ 189   1        read_data(0xa0,AddressEner_left,qushuzu,1);
+ 190   1        Delay( 1000 );
+ 191   1        temp = qushuzu[0];
+ 192   1        CalMaxEner_Ho();
+ 193   1        if ( temp>maxLimitSetEnergy_Ho)
+ 194   1        {
+ 195   2          SetEnergy_left = minEner;
+ 196   2          SetEnergy_left_only = minEner;
+ 197   2        }
+ 198   1        else
+ 199   1        {
+ 200   2          if((temp>=minEner)&&(temp<=maxEner))
+ 201   2          {
+ 202   3                /*此处未限制能量*/
+ 203   3               SetEnergy_left = temp;
+ 204   3            SetEnergy_left_only = temp;
+ 205   3          }
+ 206   2          else
+ 207   2          {
+ 208   3            SetEnergy_left = minEner;
+ 209   3            SetEnergy_left_only = minEner;
+ 210   3          }
+ 211   2        }
+ 212   1      
+ 213   1        read_data(0xa0,AddressEner_left_double,qushuzu,1);
+ 214   1        Delay( 1000 );
+ 215   1        temp = qushuzu[0];
+ 216   1        CalMaxEner_Ho();
+ 217   1        if ( temp>maxLimitSetEnergy_Ho)
+ 218   1        {
+ 219   2          SetEnergy_left_double = minEner;
+ 220   2        }
+ 221   1        else
+ 222   1        {
+ 223   2          if((temp>=minEner)&&(temp<=maxEner))
+ 224   2          {
+ 225   3      
+ 226   3            SetEnergy_left_double = temp;
+ 227   3          }
+ 228   2          else
+ 229   2          {
+ 230   3            SetEnergy_left_double = minEner;
+ 231   3          }
+ 232   2        }
+ 233   1        
+ 234   1        read_data(0xa0,AddressEner_right,qushuzu,1);
+ 235   1        Delay( 1000 );
+ 236   1        temp = qushuzu[0];
+ 237   1        CalMaxEner_Ho();
+ 238   1        if ( temp>maxLimitSetEnergy_Ho)
+ 239   1        {
+ 240   2          SetEnergy_right = minEner;
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 5   
+
+ 241   2          SetEnergy_right_only = minEner;
+ 242   2        }
+ 243   1        else
+ 244   1        {
+ 245   2          if((temp>=minEner)&&(temp<=maxEner))
+ 246   2          {
+ 247   3                /*此处未限制能量*/
+ 248   3               SetEnergy_right = temp;
+ 249   3            SetEnergy_right_only = temp;
+ 250   3          }
+ 251   2          else
+ 252   2          {
+ 253   3            SetEnergy_right = minEner;
+ 254   3            SetEnergy_right_only = minEner;
+ 255   3          }
+ 256   2        }
+ 257   1      
+ 258   1        read_data(0xa0,AddressEner_right_double,qushuzu,1);
+ 259   1        Delay( 1000 );
+ 260   1        temp = qushuzu[0];
+ 261   1        CalMaxEner_Ho();
+ 262   1        if ( temp>maxLimitSetEnergy_Ho)
+ 263   1        {
+ 264   2          SetEnergy_right_double = minEner;
+ 265   2        }
+ 266   1        else
+ 267   1        {
+ 268   2          if((temp>=minEner)&&(temp<=maxEner))
+ 269   2          {
+ 270   3      
+ 271   3            SetEnergy_right_double = temp;
+ 272   3          }
+ 273   2          else
+ 274   2          {
+ 275   3            SetEnergy_right_double = minEner;
+ 276   3          }
+ 277   2        }
+ 278   1      
+ 279   1      
+ 280   1          /*读取总脉冲，用户型*/
+ 281   1        TotalPulse_U = 0;
+ 282   1          read_data(0xa0,Address_TP_U_HH,qushuzu,1);
+ 283   1        Delay( 1000 );
+ 284   1        TotalPulse_U = (ulong)qushuzu[0]*16777216 + TotalPulse_U;//ys+
+ 285   1        read_data(0xa0,Address_TP_U_HH+1,qushuzu,1);
+ 286   1        Delay( 1000 );
+ 287   1        TotalPulse_U = (ulong)qushuzu[0]*65536 + TotalPulse_U;
+ 288   1        read_data(0xa0,Address_TP_U_HH+2,qushuzu,1);
+ 289   1        Delay( 1000 );
+ 290   1        TotalPulse_U = (ulong)qushuzu[0]*256 + TotalPulse_U;
+ 291   1        read_data(0xa0,Address_TP_U_HH+3,qushuzu,1);
+ 292   1        Delay( 1000 );
+ 293   1        TotalPulse_U = (ulong)qushuzu[0] + TotalPulse_U;
+ 294   1             if(TotalPulse_U>=TP_U_AutoClear)
+ 295   1        {
+ 296   2          TotalPulse_U=0;
+ 297   2        }
+ 298   1      
+ 299   1        /*读取总能量，用户型*/
+ 300   1        TotalJoule_U= 0;
+ 301   1         read_data(0xa0,Address_TJ_U_HH,qushuzu,1);
+ 302   1        Delay( 1000 );
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 6   
+
+ 303   1        TotalJoule_U = (ulong)qushuzu[0]*16777216 + TotalJoule_U;//ys+
+ 304   1        read_data(0xa0,Address_TJ_U_HH+1,qushuzu,1);
+ 305   1        Delay( 1000 );
+ 306   1        TotalJoule_U = (ulong)qushuzu[0]*65536 + TotalJoule_U;
+ 307   1        read_data(0xa0,Address_TJ_U_HH+2,qushuzu,1);
+ 308   1        Delay( 1000 );
+ 309   1        TotalJoule_U = (ulong)qushuzu[0]*256 + TotalJoule_U;
+ 310   1        read_data(0xa0,Address_TJ_U_HH+3,qushuzu,1);
+ 311   1        Delay( 1000 );
+ 312   1        TotalJoule_U = (ulong)qushuzu[0] + TotalJoule_U;
+ 313   1             if (TotalPulse_U==0)
+ 314   1        {
+ 315   2          TotalJoule_U=0;
+ 316   2        }
+ 317   1      
+ 318   1      
+ 319   1        //读取工作信息存储总数
+ 320   1        read_data(0xa0,Address_work_info_state_jishu,qushuzu,1);
+ 321   1        Delay( 1000 );
+ 322   1        work_info_jishu = qushuzu[0];
+ 323   1      
+ 324   1        //读取工作信息存储位置
+ 325   1        read_data(0xa0,Address_work_info_state_weizhi,qushuzu,1);
+ 326   1        Delay( 1000 );
+ 327   1        work_info_weizhishu = qushuzu[0];
+ 328   1        work_info_weizhi=Address_work_info_first+work_info_weizhishu*32;
+ 329   1      
+ 330   1        //读取上一次工作信息
+ 331   1        read_data(0xa0,work_info_weizhi,work_info_read,15);
+ 332   1        Delay( 1000 );
+ 333   1        if((work_info_read[6]|work_info_read[7]|work_info_read[8])!=0){  //上一次是否有激光工作，若有，上次信息有
+             -效
+ 334   2         if((work_info_read[9]|work_info_read[10]|work_info_read[11])!=0){
+ 335   3           //位置数增加
+ 336   3           work_info_weizhishu++;
+ 337   3           if(work_info_weizhishu>=100){
+ 338   4            work_info_weizhishu=0;
+ 339   4           }
+ 340   3           work_info_weizhi=Address_work_info_first+work_info_weizhishu*32;
+ 341   3           saveshuzu[0]=work_info_weizhishu;
+ 342   3           write_data(0xa0,Address_work_info_state_weizhi,saveshuzu,1);
+ 343   3           Delay( 1000 );
+ 344   3           
+ 345   3           //记录总数加1
+ 346   3           work_info_jishu++;
+ 347   3           if(work_info_jishu>=100){
+ 348   4            work_info_jishu=100;
+ 349   4           }
+ 350   3           saveshuzu[0]=work_info_jishu;
+ 351   3           write_data(0xa0,Address_work_info_state_jishu,saveshuzu,1);
+ 352   3           Delay( 1000 );
+ 353   3          //将上次工作信息累加到 总脉冲 总能量
+ 354   3          TotalPulse_U=TotalPulse_U+work_info_read[6]*65536+work_info_read[7]*256+work_info_read[8];
+ 355   3          TotalJoule_U=TotalJoule_U+work_info_read[9]*65536+work_info_read[10]*256+work_info_read[11];
+ 356   3      
+ 357   3            work_info_write[0]=TotalPulse_U/16777216;
+ 358   3          work_info_write[1]=TotalPulse_U%16777216/65536;
+ 359   3          work_info_write[2]=TotalPulse_U%65536/256;                
+ 360   3          work_info_write[3]=TotalPulse_U%256;
+ 361   3      
+ 362   3          work_info_write[4]=TotalJoule_U/16777216;
+ 363   3          work_info_write[5]=TotalJoule_U%16777216/65536;               
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 7   
+
+ 364   3          work_info_write[6]=TotalJoule_U%65536/256;
+ 365   3          work_info_write[7]=TotalJoule_U%256;
+ 366   3          write_data(0xa0,Address_TP_U_HH,work_info_write,8);
+ 367   3          Delay( 2000 );
+ 368   3           }
+ 369   2        }
+ 370   1      
+ 371   1        //读取本次开机时间且存入24c64
+ 372   1        real_time_flag=0;
+ 373   1        read_realtime();
+ 374   1        while(!real_time_flag){
+ 375   2      
+ 376   2        }
+ 377   1        if((rbuf[11]==0&&rbuf[12]==0)||rbuf[6]<0x19||rbuf[6]>0x50){    //若分针秒针同时为0 || 小于2019年 || 大于20
+             -50年 重新读取时间
+ 378   2           Delay_1s();
+ 379   2           Delay_1s();
+ 380   2           read_realtime();
+ 381   2           while(!real_time_flag){
+ 382   3      
+ 383   3          }
+ 384   2           if((rbuf[11]==0&&rbuf[12]==0)||rbuf[6]<0x19||rbuf[6]>0x50){
+ 385   3        //    LCD_jiaozhengtime();          //显示校正时间
+ 386   3      
+ 387   3           }
+ 388   2        }
+ 389   1      
+ 390   1        //将时间存入本次位置中，且将工作信息清零
+ 391   1        work_info_write[0]=rbuf[6];
+ 392   1        work_info_write[1]=rbuf[7];
+ 393   1        work_info_write[2]=rbuf[8];
+ 394   1        work_info_write[3]=rbuf[10];
+ 395   1        work_info_write[4]=rbuf[11];
+ 396   1        work_info_write[5]=rbuf[12];
+ 397   1        work_info_write[6]=0;
+ 398   1        work_info_write[7]=0;
+ 399   1        work_info_write[8]=0;
+ 400   1        work_info_write[9]=0;
+ 401   1        work_info_write[10]=0;
+ 402   1        work_info_write[11]=0;
+ 403   1        work_info_write[12]=0;
+ 404   1        work_info_write[13]=0;
+ 405   1        work_info_write[14]=0;
+ 406   1        write_data(0xa0,work_info_weizhi,work_info_write,15);
+ 407   1        Delay( 2000 );
+ 408   1      //  read_data(0xa0,work_info_weizhi,work_info_read,6);
+ 409   1      //  Delay( 1000 );
+ 410   1      
+ 411   1      }
+ 412          
+ 413          void Initialize_Other_Parameter ( void )
+ 414          {
+ 415   1        
+ 416   1        /*读取低频灯选标志*/
+ 417   1        read_data(0xa0,Address_ucChoiceABlight,qushuzu,1);
+ 418   1        Delay( 1000 );
+ 419   1        ucChoiceABlight = qushuzu[0];
+ 420   1      
+ 421   1        /*清除充电电压*/
+ 422   1        fnDischangVolt_OutPut_uiA( 0x0000 );
+ 423   1        fnDischangVolt_OutPut_uiB( 0x0000 );
+ 424   1      
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 8   
+
+ 425   1      
+ 426   1        /*读取信号屏蔽字节*/
+ 427   1        read_data(0xa0,Address_ucMaskByte,qushuzu,1);
+ 428   1        Delay( 1000 );
+ 429   1        ucMaskByte = qushuzu[0];
+ 430   1      
+ 431   1        if (MB_SGX==Check_Disable)    //只能屏蔽光纤50次
+ 432   1        {
+ 433   2            //读取屏蔽光纤次数
+ 434   2            read_data(0xa0,Address_MB_SGX_jishu,qushuzu,1);
+ 435   2            Delay( 1000 );
+ 436   2            MB_SGX_jishu = qushuzu[0];
+ 437   2            if(MB_SGX_jishu==0xff){  //初始化若数据等于255，计数清零
+ 438   3              MB_SGX_jishu=0;
+ 439   3            }
+ 440   2            if(MB_SGX_jishu>250){   //大于250次禁用
+ 441   3              SysFault(95);
+ 442   3              while(1){
+ 443   4                    Alarm(sound3);
+ 444   4                    Delay_1s();
+ 445   4              }
+ 446   3            }else{
+ 447   3              MB_SGX_jishu++;
+ 448   3              saveshuzu[0]=MB_SGX_jishu;
+ 449   3              write_data(0xa0,Address_MB_SGX_jishu,saveshuzu,1);
+ 450   3              Delay( 1000 );
+ 451   3            }
+ 452   2            
+ 453   2        }
+ 454   1      
+ 455   1        /*读取显示能量反馈值、充电电压标志*/
+ 456   1        read_data(0xa0,Address_ShowFeedBackVoltage,qushuzu,1);
+ 457   1        Delay( 1000 );
+ 458   1        Flag_ShowFeedBack = (bit)qushuzu[0];
+ 459   1        
+ 460   1        
+ 461   1            //读取光纤最大寿命
+ 462   1        read_data(0xa0,Address_guangxian_shouming,qushuzu,1);
+ 463   1        Delay( 1000 );
+ 464   1        guangxian_shouming = qushuzu[0];
+ 465   1        if(guangxian_shouming>100||guangxian_shouming<10){
+ 466   2            guangxian_shouming=50;
+ 467   2            saveshuzu[0]=guangxian_shouming;
+ 468   2            write_data(0xa0,Address_guangxian_shouming,saveshuzu,1);
+ 469   2            Delay( 1000 );
+ 470   2        }
+ 471   1        
+ 472   1          //读取保养计数
+ 473   1        read_data(0xa0,Address_baoyang_jishu,qushuzu,1);
+ 474   1        Delay( 1000 );
+ 475   1        baoyang_jishu = qushuzu[0];
+ 476   1        baoyang_jishu = baoyang_jishu<<8;
+ 477   1        read_data(0xa0,Address_baoyang_jishu+1,qushuzu,1);
+ 478   1        Delay( 1000 );
+ 479   1        baoyang_jishu += qushuzu[0];
+ 480   1        //读取保养参考
+ 481   1        read_data(0xa0,Address_baoyang_cankao,qushuzu,1);
+ 482   1        Delay( 1000 );
+ 483   1        baoyang_cankao = qushuzu[0];
+ 484   1        baoyang_cankao = baoyang_cankao<<8;
+ 485   1        read_data(0xa0,Address_baoyang_cankao+1,qushuzu,1);
+ 486   1        Delay( 1000 );
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 9   
+
+ 487   1        baoyang_cankao += qushuzu[0]; 
+ 488   1        if(baoyang_jishu>=baoyang_cankao){
+ 489   2            
+ 490   2          while(1)
+ 491   2          {
+ 492   3              BY_tishi(); 
+ 493   3              if (rinterrupt==rinterrupt_Yes)
+ 494   3              {  
+ 495   4                  rinterrupt = rinterrupt_No;
+ 496   4                  switch ( rbuf[8] )
+ 497   4                  {
+ 498   5                        case 0x0c://待机
+ 499   5                        {
+ 500   6                          
+ 501   6                          goto check2;
+ 502   6                        }
+ 503   5                        break;
+ 504   5                        default:
+ 505   5                        break;
+ 506   5                  }
+ 507   4              }
+ 508   3          }
+ 509   2                
+ 510   2          check2: LCDzhiliaojizijian();
+ 511   2              
+ 512   2        }
+ 513   1        
+ 514   1        return;
+ 515   1      }
+ 516          
+ 517          void fnSelectTimer2_Fun2_first (void)
+ 518          {
+ 519   1        biTestDianji = TestDianji;
+ 520   1        biChoiceT2Fun = T2Fun2;
+ 521   1        uiT2OverFlows = 0x00;
+ 522   1        T2CON = 0x09;//t1做uart波特率发生器，捕捉模式，t2ex有效
+ 523   1        ET2 = 1;
+ 524   1        TR2 = 1;
+ 525   1        return;
+ 526   1      }
+ 527                 
+ 528          
+ 529          void fnYuRan_On (void)
+ 530          {
+ 531   1        uchar i;
+ 532   1        CYR_A=YR_Open;                //第一次预燃
+ 533   1           CYR_B=YR_Open;//执行预燃命令
+ 534   1        Delay_1s();            
+ 535   1        Delay_1s();
+ 536   1        if (MB_SYR_AB==Check_Enable)
+ 537   1        {       
+ 538   2            for (i=0;i<50;i++)
+ 539   2            {
+ 540   3                //读取状态信号
+ 541   3                Delay(10);
+ 542   3                Delay(10);
+ 543   3                Delay(10);
+ 544   3                Delay(10);
+ 545   3                
+ 546   3                P6status=P6;
+ 547   3                if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 548   3                {
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 10  
+
+ 549   4                    Delay(10);
+ 550   4                    P6status=P6;
+ 551   4                    if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 552   4                    {
+ 553   5                        Delay(10);
+ 554   5                        P6status=P6;
+ 555   5                        if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 556   5                        {
+ 557   6                            //Alarm(sound2);
+ 558   6                            return;
+ 559   6                        }
+ 560   5                    }
+ 561   4                }
+ 562   3            }
+ 563   2            
+ 564   2            if ( SYR_A==SYR_cancel && SYR_B==SYR_cancel )    //第二次预燃
+ 565   2            {
+ 566   3                CYR_A=YR_Close;
+ 567   3                CYR_B=YR_Close;//撤销预燃命令
+ 568   3                Delay (50000);
+ 569   3                CYR_A=YR_Open;
+ 570   3                CYR_B=YR_Open;//执行预燃命令
+ 571   3            }
+ 572   2            else if (SYR_A==SYR_cancel )
+ 573   2            {
+ 574   3                CYR_A=YR_Close;
+ 575   3                Delay (50000);
+ 576   3                CYR_A=YR_Open;
+ 577   3            }
+ 578   2            else if (SYR_B==SYR_cancel )
+ 579   2            {
+ 580   3                CYR_B=YR_Close;//撤销预燃命令
+ 581   3                Delay (50000);
+ 582   3                CYR_B=YR_Open;//执行预燃命令
+ 583   3            }
+ 584   2            
+ 585   2            Delay_1s();
+ 586   2            Delay_1s();
+ 587   2            for (i=0;i<50;i++)
+ 588   2            {
+ 589   3                //读取状态信号
+ 590   3                Delay(10);
+ 591   3                Delay(10);
+ 592   3                Delay(10);
+ 593   3                Delay(10);
+ 594   3                
+ 595   3                P6status=P6;
+ 596   3                if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 597   3                {
+ 598   4                    Delay(10);
+ 599   4                    
+ 600   4                    P6status=P6;
+ 601   4                    if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 602   4                    {
+ 603   5                        Delay(10);
+ 604   5                        
+ 605   5                        P6status=P6;
+ 606   5                        if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 607   5                        {
+ 608   6                            //Alarm(sound2);
+ 609   6                            return;
+ 610   6                        }
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 11  
+
+ 611   5                    }   
+ 612   4                }
+ 613   3            }
+ 614   2            
+ 615   2            
+ 616   2            if ( SYR_A==SYR_cancel && SYR_B==SYR_cancel )    //第三次预燃
+ 617   2            {
+ 618   3                CYR_A=YR_Close;
+ 619   3                CYR_B=YR_Close;//撤销预燃命令
+ 620   3                Delay (50000);
+ 621   3                CYR_A=YR_Open;
+ 622   3                CYR_B=YR_Open;//执行预燃命令
+ 623   3            }
+ 624   2            else if (SYR_A==SYR_cancel )
+ 625   2            {
+ 626   3                CYR_A=YR_Close;
+ 627   3                Delay (50000);
+ 628   3                CYR_A=YR_Open;
+ 629   3            }
+ 630   2            else if (SYR_B==SYR_cancel )
+ 631   2            {
+ 632   3                CYR_B=YR_Close;//撤销预燃命令
+ 633   3                Delay (50000);
+ 634   3                CYR_B=YR_Open;//执行预燃命令
+ 635   3            }
+ 636   2            
+ 637   2            Delay_1s();
+ 638   2            Delay_1s();
+ 639   2            for (i=0;i<50;i++)
+ 640   2            {
+ 641   3                //读取状态信号
+ 642   3                Delay(10);
+ 643   3                Delay(10);
+ 644   3                Delay(10);
+ 645   3                Delay(10);
+ 646   3      
+ 647   3                P6status=P6;
+ 648   3                if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 649   3                {
+ 650   4                    Delay(10);
+ 651   4                    
+ 652   4                    P6status=P6;
+ 653   4                    if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 654   4                    {
+ 655   5                        Delay(10);
+ 656   5                        
+ 657   5                        P6status=P6;
+ 658   5                        if (SYR_A==SYR_keep && SYR_B==SYR_keep)
+ 659   5                        {
+ 660   6                            //Alarm(sound2);
+ 661   6                            return;
+ 662   6                        }
+ 663   5                    }
+ 664   4                }   
+ 665   3            }                
+ 666   2            
+ 667   2            Delay_1s();
+ 668   2            P6status = P6;
+ 669   2            if(SYR_A==SYR_cancel || SYR_B==SYR_cancel)
+ 670   2            {   
+ 671   3                Delay_1s();
+ 672   3                P6status=P6;
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 12  
+
+ 673   3                if(SYR_A==SYR_cancel || SYR_B==SYR_cancel){
+ 674   4                    
+ 675   4                    if ( SYR_A==SYR_cancel && SYR_B==SYR_cancel )
+ 676   4                    {
+ 677   5                      SysFault(33);
+ 678   5                    }
+ 679   4                    else if (SYR_A==SYR_cancel )
+ 680   4                    {
+ 681   5                      SysFault(31);
+ 682   5                    }
+ 683   4                    else if (SYR_B==SYR_cancel )
+ 684   4                    {
+ 685   5                      SysFault(32);
+ 686   5                    }
+ 687   4                    
+ 688   4                    halt();
+ 689   4                    CJDQ = JDQ_Close; //压缩机断电
+ 690   4                    while (1)
+ 691   4                    {
+ 692   5                      Alarm(sound3);
+ 693   5                      Delay_5s();
+ 694   5                    }
+ 695   4                
+ 696   4                }
+ 697   3            }
+ 698   2        }
+ 699   1      }
+ 700          
+ 701          
+ 702          
+ 703          void fnYuRan_Off (void)
+ 704          {
+ 705   1        uchar i;
+ 706   1        CYR_A = YR_Close;
+ 707   1        CYR_B = YR_Close;/*撤销预燃命令*/
+ 708   1        Delay_1s();
+ 709   1        if (MB_SYR_AB == Check_Enable)
+ 710   1        {
+ 711   2          
+ 712   2          for (i=0;i<100;i++)
+ 713   2          {
+ 714   3            /*读取状态信号*/
+ 715   3            P6status=P6;
+ 716   3            if ( SYR_A==SYR_cancel && SYR_B==SYR_cancel )
+ 717   3            {
+ 718   4              return;
+ 719   4            }
+ 720   3            Delay(10);
+ 721   3          }
+ 722   2          
+ 723   2          if ( SYR_A==SYR_keep && SYR_B==SYR_keep )
+ 724   2          {
+ 725   3            SysFault(36);
+ 726   3          }
+ 727   2          else if (SYR_A==SYR_keep )
+ 728   2          {
+ 729   3            SysFault(34);
+ 730   3          }
+ 731   2          else if (SYR_B==SYR_keep )
+ 732   2          {
+ 733   3            SysFault(35);
+ 734   3          }
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 13  
+
+ 735   2          halt();
+ 736   2          CJDQ = JDQ_Close; //压缩机断电
+ 737   2          while (1)
+ 738   2          {
+ 739   3            Alarm(sound3);
+ 740   3            Delay_5s();
+ 741   3          }
+ 742   2        }
+ 743   1      }
+ 744          
+ 745          void fnguangzha_on(void){
+ 746   1        
+ 747   1        CWGZ=GZ_Open;  
+ 748   1        Delay_1s();
+ 749   1        if (MB_SGZ_ABW==Check_Enable)
+ 750   1        {
+ 751   2          
+ 752   2          
+ 753   2        P6status=P6;
+ 754   2          if (SWGZ0==SWGZ_close)
+ 755   2          {
+ 756   3            Delay(10);
+ 757   3            P6status=P6;
+ 758   3            if (SWGZ0==SWGZ_close)
+ 759   3            {
+ 760   4              Delay(10);
+ 761   4              P6status=P6;
+ 762   4              if (SWGZ0==SWGZ_close)
+ 763   4              {
+ 764   5                halt();
+ 765   5                CJDQ = JDQ_Close; //压缩机断电
+ 766   5                SysFault(53);
+ 767   5                while (1)
+ 768   5                {
+ 769   6                  Alarm(sound3);
+ 770   6                  Delay_5s();
+ 771   6                }
+ 772   5              }
+ 773   4            }
+ 774   3          }     
+ 775   2        }
+ 776   1      }
+ 777          
+ 778          void fnguangzha_off(void){
+ 779   1        
+ 780   1        CWGZ=GZ_Close;  
+ 781   1        Delay_1s(); 
+ 782   1        if (MB_SGZ_ABW==Check_Enable)
+ 783   1        {
+ 784   2          
+ 785   2          
+ 786   2            P6status=P6;
+ 787   2          if (SWGZ0==SWGZ_open)
+ 788   2          {
+ 789   3            Delay(10);
+ 790   3            P6status=P6;
+ 791   3            if (SWGZ0==SWGZ_open)
+ 792   3            {
+ 793   4              Delay(10);
+ 794   4              P6status=P6;
+ 795   4              if (SWGZ0==SWGZ_open)
+ 796   4              {
+C51 COMPILER V9.60.0.0   INITIALIZE                                                        09/30/2026 09:26:27 PAGE 14  
+
+ 797   5                halt();
+ 798   5                CJDQ = JDQ_Close; //压缩机断电
+ 799   5                SysFault(53);
+ 800   5                while (1)
+ 801   5                {
+ 802   6                  Alarm(sound3);
+ 803   6                  Delay_5s();
+ 804   6                }
+ 805   5              }
+ 806   4            }
+ 807   3          }
+ 808   2        }
+ 809   1      }
+ 810          
+ 811          
+ 812          #endif
+ 813          
+ 814          
+ 815          
+ 816          
+ 817          
+ 818          
+ 819          
+ 820          
+ 821          
+ 822          
+ 823          
+ 824          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   3636    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       3
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,16 @@
+"STARTUP.obj",
+"ChargeVolt.obj",
+"check.obj",
+"dely.obj",
+"EnergyControl.obj",
+"fnJiaoZhun.obj",
+"IIC.obj",
+"Initialize.obj",
+"main.obj",
+"stepmotor.obj",
+"UART-RF.obj",
+"display.obj",
+"AM2302.obj" 
+TO "C8051_Y12_5" 
+RAMSIZE(256) 
+XDATA( 0X0000-0X0FFF )

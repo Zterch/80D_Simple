@@ -1,0 +1,1177 @@
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE UART_RF
+OBJECT MODULE PLACED IN UART-RF.obj
+COMPILER INVOKED BY: C:\Zterch_Used\keil\C51\BIN\C51.EXE source\UART-RF.C LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXT
+                    -END PRINT(.\UART-RF.lst) TABS(2) OBJECT(UART-RF.obj)
+
+line level    source
+
+   1          
+   2          
+   3          #include "include\includes.h"
+   4          
+   5          uchar gxjishu1,gxjishu2,gxjishu3;
+   6          uchar RF_errojishu,RF_errojishu2,RF_errojishu3,RF_errojishu4=0;
+   7          
+   8          uchar idata rinterruptrf=rinterrupt_Norf;/*rf½ÓÊÕÍê³É±êÖ¾*/
+   9          uchar rbufrf[30];/*´®¿Úrf½ÓÊÕ×Ö·û´®Êý×é*/
+  10          uchar data_rf[20];
+  11          
+  12          uchar *Ptr_Sendrf = 0;/*·¢ËÍ×Ö·û´®Ö¸Õë*/
+  13          uint SendCountrf = 0;/*´®¿Ú·¢ËÍ×Ö½Ú¼ÆÊý*/
+  14          uchar busyrf = 0;/*´®¿Ú·¢ËÍ×Ö½Ú´®Íê±Ï±êÖ¾£¬=1 Î´Íê³É=0ÒÑÍê³É*/
+  15          uint RevCountrf = 0;/*´®¿Ú½ÓÊÕ×Ö½Ú¼ÆÊý*/
+  16          
+  17          uchar g_cPackageStarted;
+  18          uchar g_cReceiveCounter;
+  19          uchar g_cCheckSum;
+  20          bit g_bReceiveOK;
+  21          bit g_b0x10Received;
+  22          
+  23          #define   COMM_CONTROL_ANTENNA    0X05  //Ä£¿éÌìÏß¿ØÖÆ¡¢×Ô¶¯Ñ°¿¨ÉèÖÃ
+  24          #define   COMM_SET_COM_BPS      0X15  //´®¿Ú²¨ÌØÂÊÉèÖÃ
+  25          #define   COMM_SET_TYPE_AB_OTHER    0X3A  //Éè¶¨¶Á¿¨Ä£Ê½TYPE A/B
+  26          #define   COMM_MIFARE1_PCD_REQUEST  0X46  //mifare one Ñ°¿¨
+  27          #define   COMM_MIFARE1_PCD_ANTICOLL 0X47  //mifare one ·À³å×²
+  28          #define   COMM_MIFARE1_PCD_SELECT   0X48  //mifare one Ñ¡¿¨
+  29          #define   COMM_AUTHENTICATION2    0X4A  //ÈÏÖ¤2
+  30          #define   COMM_PCD_READ_BLOCK     0X4B  //ÎÞÃÜÂë¶Á¿é
+  31          #define   COMM_PCD_WRITE_BLOCK    0X4C  //ÎÞÃÜÂëÐ´¿é
+  32          
+  33          
+  34          
+  35          unsigned char code COMM_CONTROL_ANTENNA_OFF[]     //¹ØÌìÏß
+  36          = {0X00,0X00,
+  37             0x04, 
+  38             COMM_CONTROL_ANTENNA, 
+  39             0x00};
+  40          unsigned char code COMM_CONTROL_ANTENNA_ON[]    //¿ªÌìÏß
+  41          = {0X00,0X00,
+  42             0x04, 
+  43             COMM_CONTROL_ANTENNA, 
+  44             0x01};
+  45          unsigned char code COMM_SET_COM_BPS_[]  //Ã¿´ÎÉÏµç²¨ÌØÂÊÎª115200
+  46          = {0X00,0X00,
+  47             0x04, 
+  48             COMM_SET_COM_BPS, 
+  49             0x07};
+  50          unsigned char code COMM_SET_TYPE_AB_OTHER_[]  //Ä£Ê½Îªs50¿¨
+  51          = {0X00,0X00,
+  52             0x04, 
+  53             COMM_SET_TYPE_AB_OTHER, 
+  54             0x41};
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 2   
+
+  55          unsigned char code COMM_MIFARE1_PCD_REQUEST_[]   //Ñ°¿¨
+  56          = {0X00,0X00,
+  57             0x04, 
+  58             COMM_MIFARE1_PCD_REQUEST, 
+  59             0x52};
+  60          unsigned char code COMM_MIFARE1_PCD_ANTICOLL_[]   //·À³åÍ»
+  61          = {0X00,0X00,
+  62             0x04, 
+  63             COMM_MIFARE1_PCD_ANTICOLL, 
+  64             0x04};
+  65          unsigned char COMM_MIFARE1_PCD_SELECT_[]  //Ñ¡¿¨
+  66          = {0X00,0X00,
+  67             0x07, 
+  68             COMM_MIFARE1_PCD_SELECT, 
+  69             0x00,0x00,0x00,0x00};
+  70          unsigned char code COMM_AUTHENTICATION2_[]    //AÃØÔ¿ÈÏÖ¤  ÉÈÇø2
+  71          = {0X00,0X00,
+  72             0x0B, 
+  73             COMM_AUTHENTICATION2, 
+  74             0x60,0x05,0x01,0x00,0x64,0x39,0x20,0x84};
+  75          unsigned char code COMM_PCD_READ_BLOCK_4[]      //¶Á¿é4
+  76          = {0X00,0X00,
+  77             0x04, 
+  78             COMM_PCD_READ_BLOCK, 
+  79             0x04};
+  80          unsigned char code COMM_PCD_READ_BLOCK_5[]      //¶Á¿é5
+  81          = {0X00,0X00,
+  82             0x04, 
+  83             COMM_PCD_READ_BLOCK, 
+  84             0x05};
+  85          unsigned char COMM_PCD_WRITE_BLOCK_[]    //Ð´¿é5
+  86          = {0X00,0X00,
+  87             0x14, 
+  88             COMM_PCD_WRITE_BLOCK, 
+  89             0x05,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x10,0x11,0x12,0x13,0x14,0x15,0x16};
+  90          
+  91          
+  92          
+  93          
+  94           void UART1_Init( void )
+  95          {                     
+  96   1          SCON1  = 0x50; // SCON0: mode 1, 8-bit UART, enable RX
+  97   1          PCON  |= 0x10;
+  98   1          EIE2  |= 0x40; /*UART1 ÖÐ¶ÏÔÊÐíes1=1*/
+  99   1      }
+ 100          
+ 101          
+ 102          
+ 103          
+ 104          static UART1_ISR( void ) interrupt 20
+ 105          {
+ 106   1          static uchar data rbufrf_temp;
+ 107   1        EA = 0;
+ 108   1          if( SCON1& ( 1<<1 ) )
+ 109   1          {
+ 110   2              //TX ok
+ 111   2              SCON1 &= ~( 1<<1 );
+ 112   2          if( SendCountrf!= 0 )
+ 113   2          {
+ 114   3            SBUF1= *Ptr_Sendrf++;
+ 115   3            SendCountrf--;
+ 116   3            busyrf= 1;
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 3   
+
+ 117   3          } 
+ 118   2          else
+ 119   2          {
+ 120   3            busyrf= 0;
+ 121   3          }
+ 122   2      
+ 123   2          }
+ 124   1          else if( SCON1& ( 1<<0 ) )
+ 125   1          {
+ 126   2              //RX ok
+ 127   2              SCON1&= ~( 1<<0 );
+ 128   2              rbufrf_temp  = SBUF1; 
+ 129   2          if (!g_bReceiveOK)    //½ÓÊÕ¸Ã°üÊý¾Ý
+ 130   2          {
+ 131   3              
+ 132   3            if ((0x02 == rbufrf_temp) && (0 == g_b0x10Received))
+ 133   3            {
+ 134   4              g_cPackageStarted = 1;    
+ 135   4              g_cReceiveCounter = 0;
+ 136   4              g_cCheckSum = 0;
+ 137   4            }
+ 138   3            else if (( 0x03 == rbufrf_temp) && (0 == g_b0x10Received) && (g_cPackageStarted))   //package end
+ 139   3            {       //check package
+ 140   4              g_cPackageStarted = 0;        
+ 141   4              if(g_cReceiveCounter < sizeof(rbufrf) - 2)
+ 142   4              {
+ 143   5                g_bReceiveOK = 1;
+ 144   5                g_cPackageStarted = 0;
+ 145   5                g_cReceiveCounter = 0;
+ 146   5              }
+ 147   4            }
+ 148   3            else if (( 0x10 == rbufrf_temp ) && (0 == g_b0x10Received))
+ 149   3            {
+ 150   4              g_b0x10Received = 1;
+ 151   4            }
+ 152   3            else if (g_cPackageStarted)
+ 153   3            {
+ 154   4              g_b0x10Received = 0;
+ 155   4      
+ 156   4              if (g_cReceiveCounter < sizeof(rbufrf) - 2)
+ 157   4              {
+ 158   5                if (g_cReceiveCounter != 0)
+ 159   5                {
+ 160   6                  g_cCheckSum += rbufrf[g_cReceiveCounter-1]; 
+ 161   6                }
+ 162   5                rbufrf[g_cReceiveCounter++] = rbufrf_temp;        
+ 163   5              }
+ 164   4              else
+ 165   4              {
+ 166   5                g_cPackageStarted     = 0;    //±ê×¼´®¿Ú½ÓÊÕ°üÆðÊ¼±êÖ¾
+ 167   5                g_cReceiveCounter   = 0;
+ 168   5              }
+ 169   4            }
+ 170   3            else
+ 171   3            {
+ 172   4               g_b0x10Received = 0;   //Ã»ÊÕµ½02Í·Ê±£¬ÈôÊÕµ½10¾ÍÓÀÔ¶²»ÔÙ½ÓÊÜ
+ 173   4            }
+ 174   3          }
+ 175   2                  
+ 176   2          }
+ 177   1        EA = 1;
+ 178   1      }
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 4   
+
+ 179          
+ 180          
+ 181          /*·¢ËÍ1  ¸ö×Ö½Ú*/
+ 182          void UART1_Senddata(unsigned char buf)
+ 183          {
+ 184   1        while( busyrf );
+ 185   1        SBUF1= buf;
+ 186   1        SendCountrf = 0;
+ 187   1        busyrf = 1;
+ 188   1        while( busyrf );
+ 189   1      }
+ 190          
+ 191            
+ 192          void UART1_Send(unsigned char * cpBUFFER)
+ 193          {    
+ 194   1        unsigned char i;                
+ 195   1        g_cCheckSum = 0;
+ 196   1      
+ 197   1        UART1_Senddata(0x02);  
+ 198   1        
+ 199   1        for (i = 0; i < (cpBUFFER[2] + 1); i++)
+ 200   1        {
+ 201   2          if(( cpBUFFER[i] == 0x02 ) || ( cpBUFFER[i] == 0x03 ) || ( cpBUFFER[i] == 0x10))
+ 202   2          {
+ 203   3            UART1_Senddata(0x10);   
+ 204   3          } 
+ 205   2          UART1_Senddata(cpBUFFER[i]);  
+ 206   2              
+ 207   2          g_cCheckSum += cpBUFFER[i];
+ 208   2        } 
+ 209   1        if (( g_cCheckSum == 0x02 ) || ( g_cCheckSum == 0x03 ) || ( g_cCheckSum == 0x10))
+ 210   1        {
+ 211   2          UART1_Senddata(0x10);   
+ 212   2        } 
+ 213   1        UART1_Senddata(g_cCheckSum);  
+ 214   1          
+ 215   1        UART1_Senddata(0x03); 
+ 216   1        g_cReceiveCounter = 0;
+ 217   1        g_bReceiveOK = 0;
+ 218   1        g_b0x10Received = 0; 
+ 219   1        
+ 220   1      }
+ 221          
+ 222          unsigned char Uart_rfinit()     
+ 223          {
+ 224   1      
+ 225   1        unsigned int cCnt;
+ 226   1      
+ 227   1        UART1_Send(COMM_CONTROL_ANTENNA_OFF);      //¹ØÌìÏß
+ 228   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 229   1        {
+ 230   2          Delay(1);
+ 231   2        }
+ 232   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 233   1        {
+ 234   2          return 3;
+ 235   2        }
+ 236   1      /*  ÓÐÎÊÌâ£¬·µ»ØÊý¾ÝÒÔ21¿ªÍ·£¬Êý¾Ý²»¶Ô
+ 237   1        UART1_Send(COMM_SET_TYPE_AB_OTHER_);   //Ä£Ê½Îªs50¿¨
+ 238   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 239   1        {
+ 240   1          Delay(1);
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 5   
+
+ 241   1        }
+ 242   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 243   1        {
+ 244   1          return 2;
+ 245   1        }         */
+ 246   1        
+ 247   1        return 0;
+ 248   1      }    
+ 249          
+ 250          unsigned char Uart_rfread()      //¹ÀËãÐ¡ÓÚ40ms
+ 251          {
+ 252   1      
+ 253   1        unsigned int cCnt;
+ 254   1      
+ 255   1        UART1_Send(COMM_CONTROL_ANTENNA_ON);       //¿ªÌìÏß
+ 256   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 257   1        {
+ 258   2          Delay(1);
+ 259   2        }
+ 260   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 261   1        {
+ 262   2          return 1;
+ 263   2        }
+ 264   1        UART1_Send(COMM_MIFARE1_PCD_REQUEST_);       //Ñ°¿¨
+ 265   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 266   1        {
+ 267   2          Delay(1);
+ 268   2        }
+ 269   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 270   1        {
+ 271   2          return 2;
+ 272   2        }
+ 273   1      
+ 274   1        UART1_Send(COMM_MIFARE1_PCD_ANTICOLL_);     //·Â³åÍ»
+ 275   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 276   1        {
+ 277   2          Delay(1);
+ 278   2        }
+ 279   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 280   1        {
+ 281   2          return 3;
+ 282   2        }
+ 283   1        COMM_MIFARE1_PCD_SELECT_[4]=rbufrf[5];
+ 284   1        COMM_MIFARE1_PCD_SELECT_[5]=rbufrf[6];
+ 285   1        COMM_MIFARE1_PCD_SELECT_[6]=rbufrf[7];
+ 286   1        COMM_MIFARE1_PCD_SELECT_[7]=rbufrf[8];
+ 287   1        UART1_Send(COMM_MIFARE1_PCD_SELECT_);     //Ñ¡¿¨
+ 288   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 289   1        {
+ 290   2          Delay(1);
+ 291   2        }
+ 292   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 293   1        {
+ 294   2          return 4;
+ 295   2        }
+ 296   1        UART1_Send(COMM_AUTHENTICATION2_);      //ÃØÔ¿ÈÏÖ¤
+ 297   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 298   1        {
+ 299   2          Delay(1);
+ 300   2        }
+ 301   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 302   1        {
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 6   
+
+ 303   2          return 5;
+ 304   2        }
+ 305   1        UART1_Send(COMM_PCD_READ_BLOCK_4);      //¶Á¿é4
+ 306   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 307   1        {
+ 308   2          Delay(1);
+ 309   2        }
+ 310   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 311   1        {
+ 312   2          return 6;
+ 313   2        }
+ 314   1        
+ 315   1        for (cCnt=0; cCnt < 10; cCnt++)  //10ms
+ 316   1        {
+ 317   2          data_rf[cCnt]=rbufrf[cCnt+5];
+ 318   2        }
+ 319   1        UART1_Send(COMM_PCD_READ_BLOCK_5);      //¶Á¿é5
+ 320   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 321   1        {
+ 322   2          Delay(1);
+ 323   2        }
+ 324   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 325   1        {
+ 326   2          return 6;
+ 327   2        }
+ 328   1        for (cCnt=10; cCnt < 20; cCnt++)  //10ms
+ 329   1        {
+ 330   2          data_rf[cCnt]=rbufrf[cCnt-5];
+ 331   2        }
+ 332   1      
+ 333   1        UART1_Send(COMM_CONTROL_ANTENNA_OFF);      //¹ØÌìÏß
+ 334   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 335   1        {
+ 336   2          Delay(1);
+ 337   2        }
+ 338   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 339   1        {
+ 340   2          return 8;
+ 341   2        }
+ 342   1      
+ 343   1        return 0;
+ 344   1      }
+ 345          
+ 346          
+ 347          unsigned char Uart_rfwrite(){
+ 348   1      
+ 349   1      
+ 350   1        unsigned int cCnt;
+ 351   1      
+ 352   1        UART1_Send(COMM_CONTROL_ANTENNA_ON);       //¿ªÌìÏß
+ 353   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 354   1        {
+ 355   2          Delay(1);
+ 356   2        }
+ 357   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 358   1        {
+ 359   2          return 1;
+ 360   2        }
+ 361   1        UART1_Send(COMM_MIFARE1_PCD_REQUEST_);       //Ñ°¿¨
+ 362   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 363   1        {
+ 364   2          Delay(1);
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 7   
+
+ 365   2        }
+ 366   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 367   1        {
+ 368   2          return 2;
+ 369   2        }
+ 370   1      
+ 371   1        UART1_Send(COMM_MIFARE1_PCD_ANTICOLL_);     //·Â³åÍ»
+ 372   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 373   1        {
+ 374   2          Delay(1);
+ 375   2        }
+ 376   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 377   1        {
+ 378   2          return 3;
+ 379   2        }
+ 380   1        COMM_MIFARE1_PCD_SELECT_[4]=rbufrf[5];
+ 381   1        COMM_MIFARE1_PCD_SELECT_[5]=rbufrf[6];
+ 382   1        COMM_MIFARE1_PCD_SELECT_[6]=rbufrf[7];
+ 383   1        COMM_MIFARE1_PCD_SELECT_[7]=rbufrf[8];
+ 384   1        UART1_Send(COMM_MIFARE1_PCD_SELECT_);     //Ñ¡¿¨
+ 385   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 386   1        {
+ 387   2          Delay(1);
+ 388   2        }
+ 389   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 390   1        {
+ 391   2          return 4;
+ 392   2        }
+ 393   1        UART1_Send(COMM_AUTHENTICATION2_);      //ÃØÔ¿ÈÏÖ¤
+ 394   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 395   1        {
+ 396   2          Delay(1);
+ 397   2        }
+ 398   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 399   1        {
+ 400   2          return 5;
+ 401   2        }
+ 402   1      
+ 403   1        
+ 404   1        for (cCnt=5; cCnt < 15; cCnt++)  //10ms
+ 405   1        {
+ 406   2          
+ 407   2          COMM_PCD_WRITE_BLOCK_[cCnt]=data_rf[cCnt+5];
+ 408   2        }
+ 409   1        
+ 410   1      
+ 411   1        UART1_Send(COMM_PCD_WRITE_BLOCK_);      //Ð´¿é5
+ 412   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 413   1        {
+ 414   2          Delay(1);
+ 415   2        }
+ 416   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+ 417   1        {
+ 418   2          return 7;
+ 419   2        }
+ 420   1      
+ 421   1        UART1_Send(COMM_CONTROL_ANTENNA_OFF);      //¹ØÌìÏß
+ 422   1        for (cCnt=1000; ((cCnt > 0) && !g_bReceiveOK)>0; cCnt--)  //10ms
+ 423   1        {
+ 424   2          Delay(1);
+ 425   2        }
+ 426   1        if (((rbufrf[4])!=0) || (0 == cCnt)||(g_bReceiveOK==0))
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 8   
+
+ 427   1        {
+ 428   2          return 8;
+ 429   2        }
+ 430   1        return 0;
+ 431   1      
+ 432   1      }
+ 433          
+ 434          
+ 435          
+ 436          void check_GX_init()
+ 437          {
+ 438   1        
+ 439   1            change_picture(0x01);
+ 440   1          
+ 441   1          if (SGX==SGX_renegade)
+ 442   1          {
+ 443   2            Delay_100us();
+ 444   2            P4status=P4;
+ 445   2            if (SGX==SGX_renegade)
+ 446   2            {
+ 447   3              Delay_100us();
+ 448   3              P4status=P4;
+ 449   3              if (SGX==SGX_renegade)
+ 450   3              {
+ 451   4      
+ 452   4      zice:     RF_init_qingchu();    
+ 453   4                RF_gxlianjieshow();           //Î´Á¬½Ó¹âÏË
+ 454   4                  while ( SGX==SGX_renegade )
+ 455   4                  {/*SGX=0£¬¹âÏË¹ÊÕÏ*/
+ 456   5                    Alarm (sound3);
+ 457   5                    Delay_1s();
+ 458   5                    P4status=P4;
+ 459   5                  }
+ 460   4              //  change_picture(0x02);
+ 461   4              //  LCDzhiliaojizijian();
+ 462   4      
+ 463   4              }
+ 464   3            }
+ 465   2          }
+ 466   1          
+ 467   1          if(Uart_rfinit())      //ÉäÆµ°å¹ÊÕÏ»òÎ´Á¬½Ó ¹ÊÕÏ80
+ 468   1          {
+ 469   2          //  change_picture(0x01);
+ 470   2            RF_erroshow();
+ 471   2            while (1)
+ 472   2              {
+ 473   3                  Alarm(sound3);
+ 474   3                  Delay_5s();
+ 475   3              }
+ 476   2          }
+ 477   1          while(Uart_rfread()){  //¹âÏËÎ´´øS50¿¨Ä£¿é  »òÕßÃÜÂë´íÎó£¬»òÕßÑéÖ¤¹ý³ÌÊ§Ð§  ÇëÊ¹ÓÃ°®¿Æ¹âÏË
+ 478   2      
+ 479   2              RF_gxshow();
+ 480   2              Alarm(sound3);
+ 481   2              Delay_1s();
+ 482   2          }
+ 483   1          
+ 484   1              //ÅÐ¶ÏÊÇ·ñÎª¸´ÖÆ¿¨µÈ
+ 485   1          gx_weizhi_temp=100;
+ 486   1          while(gx_weizhi_temp){  //¶ÁÈ¡100Ìõ¹âÏËÐòºÅ´æ´¢¼ÇÂ¼£¬Óë±¾´Î¶ÁÈ¡ÐòÁÐºÅ×÷±È½Ï
+ 487   2            
+ 488   2            read_data(0xa0,Address_gx_info_first+(--gx_weizhi_temp)*8,gx_info_read,8);
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 9   
+
+ 489   2            Delay( 3000 );
+ 490   2            if(gx_info_read[0]==COMM_MIFARE1_PCD_SELECT_[4]){
+ 491   3              if(gx_info_read[1]==COMM_MIFARE1_PCD_SELECT_[5]){
+ 492   4                if(gx_info_read[2]==COMM_MIFARE1_PCD_SELECT_[6]){
+ 493   5                  if(gx_info_read[3]==COMM_MIFARE1_PCD_SELECT_[7]){
+ 494   6                    if((gx_info_read[6]==0x5a)&&(data_rf[10]>=gx_info_read[4])){   //ÉÏ´ÎÊý¾ÝÐ´ÈëÎ´³É¹¦  ÔÚ´ËÐ´Èë
+ 495   7                      data_rf[10]++;
+ 496   7                      gxjishu1= data_rf[10];
+ 497   7                      if(Uart_rfwrite()){      //Ð´Èë²»³É¹¦
+ 498   8                          //LCD_InsertFiber();
+ 499   8                      //  SysFault(90);
+ 500   8                        RF_erroshow();
+ 501   8                        while (1)
+ 502   8                        {
+ 503   9                          Alarm(sound3);
+ 504   9                          Delay_5s();
+ 505   9                        }
+ 506   8                      }else{                  //³É¹¦Ð´Èë£¬½øÒ»²½¶ÁÈ¡ÑéÖ¤´æ´¢ÊÇ·ñÕýÈ·
+ 507   8                        Delay(10000);
+ 508   8                        if(Uart_rfread()){
+ 509   9                            //LCD_InsertFiber();
+ 510   9                        //  SysFault(91);
+ 511   9                          RF_erroshow();
+ 512   9                            while (1)
+ 513   9                          {
+ 514  10                            Alarm(sound3);
+ 515  10                            Delay_5s();
+ 516  10                          }
+ 517   9                        }else{
+ 518   9                         if(data_rf[10]!=gxjishu1){
+ 519  10                           //LCD_InsertFiber();
+ 520  10                        //  SysFault(91);
+ 521  10                           RF_erroshow();
+ 522  10                            while (1)
+ 523  10                          {
+ 524  11                            Alarm(sound3);
+ 525  11                            Delay_5s();
+ 526  11                          }
+ 527  10                         }
+ 528   9                          gx_youxiao=1;                     //·ñÔò£¬¹âÏË´ÎÊýÓÐ¿ÉÄÜÒÑ±»´Û¸Ä
+ 529   9                          gx_weizhi=gx_weizhi_temp;
+ 530   9                          gx_weizhi_temp=0; 
+ 531   9                          gx_info_read[4]=data_rf[10];
+ 532   9                          saveshuzu[0] = data_rf[10];
+ 533   9                          write_data(0xa0,Address_gx_info_first+gx_weizhi*8+4,saveshuzu,1);
+ 534   9                          Delay( 1000 );
+ 535   9                          saveshuzu[0] = 0;
+ 536   9                          write_data(0xa0,Address_gx_info_first+gx_weizhi*8+6,saveshuzu,1);
+ 537   9                          Delay( 1000 );
+ 538   9                              
+ 539   9                        }
+ 540   8                      }
+ 541   7                      
+ 542   7                    }
+ 543   6                    else{
+ 544   7                    
+ 545   7                      if(data_rf[10]>gx_info_read[4]){   //ÈôÐòÁÐºÅÒ»ÖÂ£¬Ôò±È½Ï´æ´¢´ÎÊý£¬Èô¹âÏßÄÚ²¿´ÎÊýÐ¡ÓÚµÈÓÚ24c64ÖÐ´Î
+             -ÊýÔòÓÐÐ§
+ 546   8                        gx_youxiao=1;                     //·ñÔò£¬¹âÏË´ÎÊýÓÐ¿ÉÄÜÒÑ±»´Û¸Ä
+ 547   8                        gx_weizhi=gx_weizhi_temp;
+ 548   8                        gx_weizhi_temp=0;
+ 549   8                        gx_info_read[4]=data_rf[10];
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 10  
+
+ 550   8                        saveshuzu[0] = data_rf[10];
+ 551   8                        write_data(0xa0,Address_gx_info_first+gx_weizhi*8+4,saveshuzu,1);
+ 552   8                        Delay( 1000 );
+ 553   8                        
+ 554   8                      }else if(data_rf[10]==gx_info_read[4]){
+ 555   8                        gx_youxiao=1;                     //·ñÔò£¬¹âÏË´ÎÊýÓÐ¿ÉÄÜÒÑ±»´Û¸Ä
+ 556   8                        gx_weizhi=gx_weizhi_temp;
+ 557   8                        gx_weizhi_temp=0;
+ 558   8                      }else{
+ 559   8                        RF_gxshow();
+ 560   8                        while ( SGX==SGX_inserted ){
+ 561   9                          Alarm(sound3);
+ 562   9                          Delay_1s();
+ 563   9                          P4status=P4;
+ 564   9                        }
+ 565   8                        goto zice;
+ 566   8                      }
+ 567   7                    }
+ 568   6                  }else{
+ 569   6                    gx_youxiao=0;
+ 570   6                  }
+ 571   5                }else{
+ 572   5                  gx_youxiao=0;
+ 573   5                }
+ 574   4              }else{
+ 575   4                gx_youxiao=0;
+ 576   4              }
+ 577   3            }else{
+ 578   3              gx_youxiao=0;
+ 579   3            }
+ 580   2            
+ 581   2          }
+ 582   1          
+ 583   1          
+ 584   1            if(gx_youxiao==0){      //Èô±¾¹âÏËÎ´Ê¹ÓÃ¹ý£¬ÔòÎªÐÂ¹âÏË£¬ÅÐ¶Ï¹âÏËÄÚ²¿Ð£Ñé×ÖÊÇ·ñºÍ³ÌÐòËã³öÀ´µÄÒ»ÖÂ£¬ÈôÒ»Ö
+             -ÂÔòÎªÓÐÐ§¹âÏË
+ 585   2            gx_jiaoyan=(uchar)(COMM_MIFARE1_PCD_SELECT_[4]+9)^(uchar)(COMM_MIFARE1_PCD_SELECT_[5]>>2);
+ 586   2            gx_jiaoyan=gx_jiaoyan*((uchar)(COMM_MIFARE1_PCD_SELECT_[6]<<1)^(uchar)(~COMM_MIFARE1_PCD_SELECT_[7]));
+ 587   2            if((gx_jiaoyan%256)==data_rf[17]&&(gx_jiaoyan/256)==data_rf[16]){
+ 588   3                  gx_info_read[0]=COMM_MIFARE1_PCD_SELECT_[4];
+ 589   3                  gx_info_read[1]=COMM_MIFARE1_PCD_SELECT_[5];
+ 590   3                  gx_info_read[2]=COMM_MIFARE1_PCD_SELECT_[6];
+ 591   3                  gx_info_read[3]=COMM_MIFARE1_PCD_SELECT_[7];
+ 592   3                  gx_info_read[4]=data_rf[10];
+ 593   3                  if(data_rf[11]>10){  //¹âÏË¿ÉÓÃ´ÎÊýÒì³££¬Ðè¸ü»»¹âÏË
+ 594   4                    RF_gxshow();
+ 595   4                    while ( SGX==SGX_inserted ){
+ 596   5                      Alarm(sound3);
+ 597   5                      Delay_1s();
+ 598   5                      P4status=P4;
+ 599   5                    }
+ 600   4                    goto zice;
+ 601   4                  }
+ 602   3                  gx_info_read[5]=data_rf[11];
+ 603   3                  gx_info_read[6]=0;
+ 604   3                  gx_info_read[7]=0;
+ 605   3                read_data(0xa0,Address_gx_info_weizhi,qushuzu,1);
+ 606   3                Delay( 1000 );
+ 607   3                gx_weizhi = qushuzu[0];
+ 608   3                if(gx_weizhi>99)
+ 609   3                  gx_weizhi=0;            
+ 610   3                write_data(0xa0,Address_gx_info_first+gx_weizhi*8,gx_info_read,8);
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 11  
+
+ 611   3                Delay( 1000 );
+ 612   3                gx_weizhi++;
+ 613   3                saveshuzu[0]=gx_weizhi;
+ 614   3                write_data(0xa0,Address_gx_info_weizhi,saveshuzu,1);
+ 615   3                Delay( 1000 );
+ 616   3                gx_weizhi--;
+ 617   3            
+ 618   3            }else{    //²»Ò»ÖÂÔòÎª¸´ÖÆ¹âÏË£¬Ðè¸ü»»¹âÏË
+ 619   3            
+ 620   3              RF_gxshow();
+ 621   3              while ( SGX==SGX_inserted ){
+ 622   4                Alarm(sound3);
+ 623   4                Delay_1s();
+ 624   4                P4status=P4;
+ 625   4              }
+ 626   3              goto zice;
+ 627   3            }
+ 628   2          }
+ 629   1          
+ 630   1          RF_initshow();
+ 631   1            if(data_rf[10]>guangxian_shouming){
+ 632   2              GX_shixiaoshow();
+ 633   2              while(1){
+ 634   3                    Alarm(sound3);
+ 635   3                    Delay_1s();
+ 636   3                  }
+ 637   2            }
+ 638   1          
+ 639   1      //    if((data_rf[10]>=10)){   //¹âÏË´ÎÊýºÄ¾¡    
+ 640   1      //      GX_shixiaoshow();
+ 641   1      //      Alarm(sound3);
+ 642   1      //      Delay_1s(); 
+ 643   1      //      Alarm(sound3);
+ 644   1      //      Delay_1s(); 
+ 645   1      //      Alarm(sound3);
+ 646   1      //      Delay_1s(); 
+ 647   1      //      Alarm(sound3);
+ 648   1      //      if(data_rf[10]>guangxian_shouming){
+ 649   1      //        while(1){
+ 650   1      //              Alarm(sound3);
+ 651   1      //              Delay_1s();
+ 652   1      //            }
+ 653   1      //      }
+ 654   1      //      
+ 655   1      //    }
+ 656   1          
+ 657   1          if((lot_data[0]== COMM_MIFARE1_PCD_SELECT_[4])&&(lot_data[1]== COMM_MIFARE1_PCD_SELECT_[5])&&(lot_data[2
+             -]== COMM_MIFARE1_PCD_SELECT_[6])&&(lot_data[3]== COMM_MIFARE1_PCD_SELECT_[7])){
+ 658   2                      
+ 659   2          }else{
+ 660   2                      RF_writeflag=0;
+ 661   2                      lot_data[0]= COMM_MIFARE1_PCD_SELECT_[4];
+ 662   2                      lot_data[1]= COMM_MIFARE1_PCD_SELECT_[5];
+ 663   2                      lot_data[2]= COMM_MIFARE1_PCD_SELECT_[6];
+ 664   2                      lot_data[3]= COMM_MIFARE1_PCD_SELECT_[7];
+ 665   2          } 
+ 666   1          
+ 667   1          Delay_5s();
+ 668   1          change_picture(0x02);
+ 669   1          if(gx_ener_restrict==4&&SetFrequency>40){
+ 670   2            SetFrequency=10;    
+ 671   2            FlagPara = parachang;     
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 12  
+
+ 672   2          }
+ 673   1          CalMaxEner_Ho();
+ 674   1          if (SetEnergy_left>maxLimitSetEnergy_Ho)
+ 675   1          {
+ 676   2            FlagPara = parachang;
+ 677   2            SetEnergy_left= maxLimitSetEnergy_Ho;
+ 678   2            Display_Energy_left( SetEnergy_left);
+ 679   2            Power = SetFrequency*SetEnergy_left;
+ 680   2            Display_power_left( Power );
+ 681   2          }
+ 682   1          if (SetEnergy_right>maxLimitSetEnergy_Ho)
+ 683   1          {
+ 684   2            FlagPara = parachang;
+ 685   2            SetEnergy_right = maxLimitSetEnergy_Ho;
+ 686   2            Display_Energy_right( SetEnergy_right);
+ 687   2            Power = SetFrequency*SetEnergy_right;
+ 688   2            Display_power_right( Power );
+ 689   2          }   
+ 690   1          LCDzhiliaojizijian();
+ 691   1        
+ 692   1        
+ 693   1        
+ 694   1      }
+ 695          
+ 696          
+ 697          void check_GX()
+ 698          {
+ 699   1          
+ 700   1          if (SGX==SGX_renegade)
+ 701   1          {
+ 702   2            Delay_100us();
+ 703   2            P4status=P4;
+ 704   2            if (SGX==SGX_renegade)
+ 705   2            {
+ 706   3              Delay_100us();
+ 707   3              P4status=P4;
+ 708   3              if (SGX==SGX_renegade)
+ 709   3              {
+ 710   4      
+ 711   4                if(Status==1){
+ 712   5                  change_picture(0x01);
+ 713   5      zice_daiji: RF_init_qingchu();    
+ 714   5                  RF_gxlianjieshow();           //Î´Á¬½Ó¹âÏË
+ 715   5                  while ( SGX==SGX_renegade )
+ 716   5                  {/*SGX=0£¬¹âÏË¹ÊÕÏ*/
+ 717   6                    Alarm (sound3);
+ 718   6                    Delay_1s();
+ 719   6                    P4status=P4;
+ 720   6                  }
+ 721   5          
+ 722   5                while(Uart_rfread()){  //¹âÏËÎ´´øS50¿¨Ä£¿é  »òÕßÃÜÂë´íÎó£¬»òÕßÑéÖ¤¹ý³ÌÊ§Ð§  ÇëÊ¹ÓÃ°®¿Æ¹âÏË
+ 723   6      
+ 724   6                    RF_gxshow();
+ 725   6                    Alarm(sound3);
+ 726   6                    Delay_1s();
+ 727   6                }
+ 728   5          
+ 729   5              //ÅÐ¶ÏÊÇ·ñÎª¸´ÖÆ¿¨µÈ
+ 730   5          gx_weizhi_temp=100;
+ 731   5          while(gx_weizhi_temp){  //¶ÁÈ¡100Ìõ¹âÏËÐòºÅ´æ´¢¼ÇÂ¼£¬Óë±¾´Î¶ÁÈ¡ÐòÁÐºÅ×÷±È½Ï
+ 732   6            
+ 733   6            read_data(0xa0,Address_gx_info_first+(--gx_weizhi_temp)*8,gx_info_read,8);
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 13  
+
+ 734   6            Delay( 3000 );
+ 735   6            if(gx_info_read[0]==COMM_MIFARE1_PCD_SELECT_[4]){
+ 736   7              if(gx_info_read[1]==COMM_MIFARE1_PCD_SELECT_[5]){
+ 737   8                if(gx_info_read[2]==COMM_MIFARE1_PCD_SELECT_[6]){
+ 738   9                  if(gx_info_read[3]==COMM_MIFARE1_PCD_SELECT_[7]){
+ 739  10                    if((gx_info_read[6]==0x5a)&&(data_rf[10]>=gx_info_read[4])){   //ÉÏ´ÎÊý¾ÝÐ´ÈëÎ´³É¹¦  ÔÚ´ËÐ´Èë
+ 740  11                      data_rf[10]++;
+ 741  11                      gxjishu1= data_rf[10];
+ 742  11                      if(Uart_rfwrite()){      //Ð´Èë²»³É¹¦
+ 743  12                          //LCD_InsertFiber();
+ 744  12                      //  SysFault(90);
+ 745  12                        RF_erroshow();
+ 746  12                        while (1)
+ 747  12                        {
+ 748  13                          Alarm(sound3);
+ 749  13                          Delay_5s();
+ 750  13                        }
+ 751  12                      }else{                  //³É¹¦Ð´Èë£¬½øÒ»²½¶ÁÈ¡ÑéÖ¤´æ´¢ÊÇ·ñÕýÈ·
+ 752  12                        Delay(10000);
+ 753  12                        if(Uart_rfread()){
+ 754  13                            //LCD_InsertFiber();
+ 755  13                        //  SysFault(91);
+ 756  13                          RF_erroshow();
+ 757  13                            while (1)
+ 758  13                          {
+ 759  14                            Alarm(sound3);
+ 760  14                            Delay_5s();
+ 761  14                          }
+ 762  13                        }else{
+ 763  13                         if(data_rf[10]!=gxjishu1){
+ 764  14                           //LCD_InsertFiber();
+ 765  14                        //  SysFault(91);
+ 766  14                           RF_erroshow();
+ 767  14                            while (1)
+ 768  14                          {
+ 769  15                            Alarm(sound3);
+ 770  15                            Delay_5s();
+ 771  15                          }
+ 772  14                         }
+ 773  13                          gx_youxiao=1;                     //·ñÔò£¬¹âÏË´ÎÊýÓÐ¿ÉÄÜÒÑ±»´Û¸Ä
+ 774  13                          gx_weizhi=gx_weizhi_temp;
+ 775  13                          gx_weizhi_temp=0; 
+ 776  13                          gx_info_read[4]=data_rf[10];
+ 777  13                          saveshuzu[0] = data_rf[10];
+ 778  13                          write_data(0xa0,Address_gx_info_first+gx_weizhi*8+4,saveshuzu,1);
+ 779  13                          Delay( 1000 );
+ 780  13                          saveshuzu[0] = 0;
+ 781  13                          write_data(0xa0,Address_gx_info_first+gx_weizhi*8+6,saveshuzu,1);
+ 782  13                          Delay( 1000 );
+ 783  13                              
+ 784  13                        }
+ 785  12                      }
+ 786  11                      
+ 787  11                    }
+ 788  10                    else{
+ 789  11                    
+ 790  11                      if(data_rf[10]>gx_info_read[4]){   //ÈôÐòÁÐºÅÒ»ÖÂ£¬Ôò±È½Ï´æ´¢´ÎÊý£¬Èô¹âÏßÄÚ²¿´ÎÊýÐ¡ÓÚµÈÓÚ24c64ÖÐ´Î
+             -ÊýÔòÓÐÐ§
+ 791  12                        gx_youxiao=1;                     //·ñÔò£¬¹âÏË´ÎÊýÓÐ¿ÉÄÜÒÑ±»´Û¸Ä
+ 792  12                        gx_weizhi=gx_weizhi_temp;
+ 793  12                        gx_weizhi_temp=0;
+ 794  12                        gx_info_read[4]=data_rf[10];
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 14  
+
+ 795  12                        saveshuzu[0] = data_rf[10];
+ 796  12                        write_data(0xa0,Address_gx_info_first+gx_weizhi*8+4,saveshuzu,1);
+ 797  12                        Delay( 1000 );
+ 798  12                        
+ 799  12                      }else if(data_rf[10]==gx_info_read[4]){
+ 800  12                        gx_youxiao=1;                     //·ñÔò£¬¹âÏË´ÎÊýÓÐ¿ÉÄÜÒÑ±»´Û¸Ä
+ 801  12                        gx_weizhi=gx_weizhi_temp;
+ 802  12                        gx_weizhi_temp=0;
+ 803  12                      }else{
+ 804  12                        RF_gxshow();
+ 805  12                        while ( SGX==SGX_inserted ){
+ 806  13                          Alarm(sound3);
+ 807  13                          Delay_1s();
+ 808  13                          P4status=P4;
+ 809  13                        }
+ 810  12                        goto zice_daiji;
+ 811  12                      }
+ 812  11                    }
+ 813  10                  }else{
+ 814  10                    gx_youxiao=0;
+ 815  10                  }
+ 816   9                }else{
+ 817   9                  gx_youxiao=0;
+ 818   9                }
+ 819   8              }else{
+ 820   8                gx_youxiao=0;
+ 821   8              }
+ 822   7            }else{
+ 823   7              gx_youxiao=0;
+ 824   7            }
+ 825   6            
+ 826   6          }
+ 827   5          
+ 828   5          
+ 829   5            if(gx_youxiao==0){      //Èô±¾¹âÏËÎ´Ê¹ÓÃ¹ý£¬ÔòÎªÐÂ¹âÏË£¬ÅÐ¶Ï¹âÏËÄÚ²¿Ð£Ñé×ÖÊÇ·ñºÍ³ÌÐòËã³öÀ´µÄÒ»ÖÂ£¬ÈôÒ»Ö
+             -ÂÔòÎªÓÐÐ§¹âÏË
+ 830   6            gx_jiaoyan=(uchar)(COMM_MIFARE1_PCD_SELECT_[4]+9)^(uchar)(COMM_MIFARE1_PCD_SELECT_[5]>>2);
+ 831   6            gx_jiaoyan=gx_jiaoyan*((uchar)(COMM_MIFARE1_PCD_SELECT_[6]<<1)^(uchar)(~COMM_MIFARE1_PCD_SELECT_[7]));
+ 832   6            if((gx_jiaoyan%256)==data_rf[17]&&(gx_jiaoyan/256)==data_rf[16]){
+ 833   7                  gx_info_read[0]=COMM_MIFARE1_PCD_SELECT_[4];
+ 834   7                  gx_info_read[1]=COMM_MIFARE1_PCD_SELECT_[5];
+ 835   7                  gx_info_read[2]=COMM_MIFARE1_PCD_SELECT_[6];
+ 836   7                  gx_info_read[3]=COMM_MIFARE1_PCD_SELECT_[7];
+ 837   7                  gx_info_read[4]=data_rf[10];
+ 838   7                  if(data_rf[11]>10){  //¹âÏË¿ÉÓÃ´ÎÊýÒì³££¬Ðè¸ü»»¹âÏË
+ 839   8                    RF_gxshow();
+ 840   8                    while ( SGX==SGX_inserted ){
+ 841   9                      Alarm(sound3);
+ 842   9                      Delay_1s();
+ 843   9                      P4status=P4;
+ 844   9                    }
+ 845   8                    goto zice_daiji;
+ 846   8                  }
+ 847   7                  gx_info_read[5]=data_rf[11];
+ 848   7                  gx_info_read[6]=0;
+ 849   7                  gx_info_read[7]=0;
+ 850   7                read_data(0xa0,Address_gx_info_weizhi,qushuzu,1);
+ 851   7                Delay( 1000 );
+ 852   7                gx_weizhi = qushuzu[0];
+ 853   7                if(gx_weizhi>99)
+ 854   7                  gx_weizhi=0;            
+ 855   7                write_data(0xa0,Address_gx_info_first+gx_weizhi*8,gx_info_read,8);
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 15  
+
+ 856   7                Delay( 1000 );
+ 857   7                gx_weizhi++;
+ 858   7                saveshuzu[0]=gx_weizhi;
+ 859   7                write_data(0xa0,Address_gx_info_weizhi,saveshuzu,1);
+ 860   7                Delay( 1000 );
+ 861   7                gx_weizhi--;
+ 862   7            
+ 863   7            }else{    //²»Ò»ÖÂÔòÎª¸´ÖÆ¹âÏË£¬Ðè¸ü»»¹âÏË
+ 864   7            
+ 865   7              RF_gxshow();
+ 866   7              while ( SGX==SGX_inserted ){
+ 867   8                Alarm(sound3);
+ 868   8                Delay_1s();
+ 869   8                P4status=P4;
+ 870   8              }
+ 871   7              goto zice_daiji;
+ 872   7            }
+ 873   6          }
+ 874   5          
+ 875   5          RF_initshow();
+ 876   5            if(data_rf[10]>guangxian_shouming){
+ 877   6              GX_shixiaoshow();
+ 878   6              while(1){
+ 879   7                    Alarm(sound3);
+ 880   7                    Delay_1s();
+ 881   7                  }
+ 882   6            }
+ 883   5          
+ 884   5      //    if((data_rf[10]>=10)){   //¹âÏË´ÎÊýºÄ¾¡    
+ 885   5      //      GX_shixiaoshow();
+ 886   5      //      Alarm(sound3);
+ 887   5      //      Delay_1s(); 
+ 888   5      //      Alarm(sound3);
+ 889   5      //      Delay_1s(); 
+ 890   5      //      Alarm(sound3);
+ 891   5      //      Delay_1s(); 
+ 892   5      //      Alarm(sound3);
+ 893   5      //      if(data_rf[10]>guangxian_shouming){
+ 894   5      //        while(1){
+ 895   5      //              Alarm(sound3);
+ 896   5      //              Delay_1s();
+ 897   5      //            }
+ 898   5      //      }
+ 899   5      //      
+ 900   5      //    }
+ 901   5          
+ 902   5          if((lot_data[0]== COMM_MIFARE1_PCD_SELECT_[4])&&(lot_data[1]== COMM_MIFARE1_PCD_SELECT_[5])&&(lot_data[2
+             -]== COMM_MIFARE1_PCD_SELECT_[6])&&(lot_data[3]== COMM_MIFARE1_PCD_SELECT_[7])){
+ 903   6                      
+ 904   6          }else{
+ 905   6                      RF_writeflag=0;
+ 906   6                      lot_data[0]= COMM_MIFARE1_PCD_SELECT_[4];
+ 907   6                      lot_data[1]= COMM_MIFARE1_PCD_SELECT_[5];
+ 908   6                      lot_data[2]= COMM_MIFARE1_PCD_SELECT_[6];
+ 909   6                      lot_data[3]= COMM_MIFARE1_PCD_SELECT_[7];
+ 910   6          } 
+ 911   5          
+ 912   5          Delay_5s();
+ 913   5          change_picture(0x02);
+ 914   5          if(gx_ener_restrict==4&&SetFrequency>40){
+ 915   6            SetFrequency=10;    
+ 916   6            FlagPara = parachang;     
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 16  
+
+ 917   6          }
+ 918   5          CalMaxEner_Ho();
+ 919   5          if (SetEnergy_left>maxLimitSetEnergy_Ho)
+ 920   5          {
+ 921   6            FlagPara = parachang;
+ 922   6            SetEnergy_left= maxLimitSetEnergy_Ho;
+ 923   6            Display_Energy_left( SetEnergy_left);
+ 924   6            Power = SetFrequency*SetEnergy_left;
+ 925   6            Display_power_left( Power );
+ 926   6          }
+ 927   5          if (SetEnergy_right>maxLimitSetEnergy_Ho)
+ 928   5          {
+ 929   6            FlagPara = parachang;
+ 930   6            SetEnergy_right = maxLimitSetEnergy_Ho;
+ 931   6            Display_Energy_right( SetEnergy_right);
+ 932   6            Power = SetFrequency*SetEnergy_right;
+ 933   6            Display_power_right( Power );
+ 934   6          }   
+ 935   5          fnShowdaiji();
+ 936   5          }else if(Status==2){        //×¼±¸»ò·¢Éä
+ 937   5             LCD_InsertFiber();
+ 938   5             halt();
+ 939   5             CJDQ = JDQ_Close; //Ñ¹Ëõ»ú¶Ïµç
+ 940   5             while (1)
+ 941   5            {
+ 942   6              Alarm(sound3);
+ 943   6              Delay_5s();
+ 944   6            }
+ 945   5          }
+ 946   4          
+ 947   4        
+ 948   4              }
+ 949   3            }
+ 950   2          }
+ 951   1        
+ 952   1      }
+ 953          
+ 954          
+ 955          void check_GX_zhunbei()
+ 956          {
+ 957   1        if(T_2s_flag){
+ 958   2            T_2s_flag=0;
+ 959   2            if(Uart_rfread()){        //Á¬Ðø3´Î¶ÁÈ¡Òì³£ ÈÏÎªs50¿¨Î´ÔÚ·¶Î§ £¬»òÕßÃÜÂë´íÎó£¬ÈÏÖ¤Ê§°ÜµÈ£¬ÇëÊ¹ÓÃ°®¿Æ¹âÏË
+ 960   3              RF_errojishu++;
+ 961   3              if(RF_errojishu>=3){
+ 962   4                  LCD_InsertFiber();
+ 963   4                    SysFault(92);
+ 964   4                  while(1){
+ 965   5                    Alarm(sound3);
+ 966   5                    Delay_1s();
+ 967   5                  }
+ 968   4              }
+ 969   3            }else{              //Õý³£¶ÁÈ¡ºóÅÐ¶Ï´ÎÊý
+ 970   3              RF_errojishu=0;
+ 971   3              if(gx_info_read[4]!=data_rf[10]){  //´ÎÊýºÄ¾¡»òÕß×Ü´ÎÊýÒì³£
+ 972   4                RF_errojishu3++;
+ 973   4                if(RF_errojishu3>=3){
+ 974   5                  LCD_InsertFiber();
+ 975   5                    SysFault(93);
+ 976   5                  while(1){
+ 977   6                    Alarm(sound3);
+ 978   6                    Delay_1s();
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 17  
+
+ 979   6                  }
+ 980   5                }
+ 981   4              }else{
+ 982   4                RF_errojishu3=0;
+ 983   4              }
+ 984   3              //ÐòÁÐºÅ²»Ò»ÖÂ
+ 985   3              if((lot_data[0]== COMM_MIFARE1_PCD_SELECT_[4])&&(lot_data[1]== COMM_MIFARE1_PCD_SELECT_[5])&&(lot_data
+             -[2]== COMM_MIFARE1_PCD_SELECT_[6])&&(lot_data[3]== COMM_MIFARE1_PCD_SELECT_[7])){
+ 986   4                 RF_errojishu4=0; 
+ 987   4              }else{
+ 988   4                RF_errojishu4++;
+ 989   4                if(RF_errojishu4>=3){
+ 990   5                  LCD_InsertFiber();
+ 991   5                    SysFault(94);
+ 992   5                  while(1){
+ 993   6                    Alarm(sound3);
+ 994   6                    Delay_1s();
+ 995   6                  }
+ 996   5                }
+ 997   4                
+ 998   4              }
+ 999   3            }
+1000   2        }
+1001   1            
+1002   1        
+1003   1      }
+1004          
+1005          void GX_write()
+1006          {
+1007   1        
+1008   1        if(Totalminutes_benci>=3){
+1009   2              if(RF_writeflag==0){
+1010   3              RF_writeflag=1;
+1011   3              data_rf[10]++;
+1012   3              gxjishu1= data_rf[10];
+1013   3              if(Uart_rfwrite()){
+1014   4                data_rf[10]--;
+1015   4                RF_writeflag=0;
+1016   4                  RF_errojishu2++;
+1017   4      //            if(RF_errojishu2>=3){
+1018   4      //              //LCD_InsertFiber();
+1019   4      //              SysFault(90);
+1020   4      //              while (1)
+1021   4      //            {
+1022   4      //              Alarm(sound3);
+1023   4      //              Delay_5s();
+1024   4      //            }
+1025   4      //            }
+1026   4                saveshuzu[0] = 0x5a;
+1027   4                write_data(0xa0,Address_gx_info_first+gx_weizhi*8+6,saveshuzu,1);
+1028   4                Delay( 1000 );
+1029   4              }else{
+1030   4                gx_info_read[4]=data_rf[10];
+1031   4                saveshuzu[0] = data_rf[10];
+1032   4                write_data(0xa0,Address_gx_info_first+gx_weizhi*8+4,saveshuzu,1);
+1033   4                Delay( 1000 );
+1034   4                saveshuzu[0] = 0;
+1035   4                write_data(0xa0,Address_gx_info_first+gx_weizhi*8+6,saveshuzu,1);
+1036   4                Delay( 1000 );
+1037   4                
+1038   4                 RF_errojishu2=0;
+1039   4              }
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 18  
+
+1040   3              }
+1041   2      
+1042   2          }
+1043   1        
+1044   1      }
+1045          
+1046          
+1047          
+1048          
+1049          void Pwm_LD_init(void)
+1050          {  
+1051   1          PCA0MD   = 0x08;   //ÏµÍ³Ê±ÖÓ£¬½ûÖ¹Òç³öÖÐ¶Ï
+1052   1          PCA0CPM1 = 0xc2;   //PCA1 16Î»pwmÄ£Ê½
+1053   1          PCA0CPL1 = 0;      //Õ¼¿Õ±ÈÎª0%
+1054   1          PCA0CPH1 = 0;    
+1055   1          PCA0CN   = 0x40;  //Æô¶¯pca¶¨Ê±Æ÷
+1056   1          pwm_ld_data = 0;
+1057   1      }
+1058          
+1059          void Pwm_LD(uint cc)
+1060          {  
+1061   1          PCA0CPH1 = cc / 256;
+1062   1          PCA0CPL1 = cc % 256;  
+1063   1          PCA0CPM1 = 0xc2;     //PCA1 16Î»pwmÄ£Ê½
+1064   1      }            
+1065          /*
+1066          void Pwm_FS_init(void)
+1067          {  
+1068            PCA0MD=0x08;//ÏµÍ³Ê±ÖÓ£¬½ûÖ¹Òç³öÖÐ¶Ï
+1069              PCA0CPM2=0xc2;//PCA2 16Î»pwmÄ£Ê½
+1070            PCA0CPM3=0xc2;//PCA2  16Î»pwmÄ£Ê½
+1071            PCA0CPM4=0xc2;//PCA2  16Î»pwmÄ£Ê½
+1072              PCA0CPL2=0;   // ÒòÎªµçÂ·ÖÐÓÐ·´ÏòÇý¶¯  ¹Ê´ËÊ±Õ¼¿Õ±ÈÎª0%
+1073            PCA0CPH2=0;
+1074            PCA0CPL3=0;
+1075            PCA0CPH3=0;
+1076            PCA0CPL4=0;
+1077            PCA0CPH4=0;
+1078            PCA0CN= 0x40;//Æô¶¯pca¶¨Ê±Æ÷
+1079          }
+1080          
+1081          void Pwm_FS(uint cc)
+1082          {  
+1083              PCA0CPL2=cc%256;
+1084            PCA0CPH2=cc/256;
+1085            PCA0CPL3=cc%256;  
+1086            PCA0CPH3=cc/256;
+1087            PCA0CPL4=cc%256;
+1088            PCA0CPH4=cc/256;
+1089            PCA0CPM2=0xc2;//PCA2 16Î»pwmÄ£Ê½
+1090            PCA0CPM3=0xc2;//PCA2  16Î»pwmÄ£Ê½
+1091            PCA0CPM4=0xc2;//PCA2  16Î»pwmÄ£Ê½ 
+1092          
+1093          }
+1094                    */
+1095          
+1096          
+1097          
+1098          
+1099          
+1100          
+1101          
+C51 COMPILER V9.60.0.0   UART_RF                                                           09/30/2026 09:26:27 PAGE 19  
+
+1102          
+1103          
+1104          
+1105          
+1106          
+1107          
+1108          
+1109          
+1110          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   5304    ----
+   CONSTANT SIZE    =     52    ----
+   XDATA SIZE       =     97      10
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1    ----
+   IDATA SIZE       =      1    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
